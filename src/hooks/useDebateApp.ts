@@ -1,12 +1,46 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, SidebarOption, Tool, Agent, DebateConfiguration } from '@/types';
-import { debateApi, SimulationRequest } from '@/lib/api';
+import { debateApi, SimulationRequest, ModelInfo } from '@/lib/api';
 
 // Utility function to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// Predefined agent templates with full configurations
+const prebuiltAgentTemplates = {
+  'javier-a': {
+    name: 'Javier A.',
+    personality: 'You are Javier, a conservative economist who values free market principles and fiscal responsibility. You tend to support traditional business approaches and are skeptical of government regulation. You base your arguments on economic data and historical precedents.',
+    bias: 0.3,
+    color: '#DC2626'
+  },
+  'maria-b': {
+    name: 'Maria B.',
+    personality: 'You are Maria, a progressive social activist who prioritizes social justice and equality. You advocate for policies that protect marginalized communities and support government intervention when it serves the public good. You are passionate about human rights and environmental issues.',
+    bias: -0.3,
+    color: '#059669'
+  },
+  'victor-c': {
+    name: 'Victor C.',
+    personality: 'You are Victor, a pragmatic technology professional who focuses on practical solutions and evidence-based decision making. You tend to remain neutral on political issues and prefer analyzing problems from multiple angles before forming opinions. You value innovation and efficiency.',
+    bias: 0.0,
+    color: '#2563EB'
+  },
+  'ana-d': {
+    name: 'Ana D.',
+    personality: 'You are Ana, an academic researcher who approaches discussions with scientific rigor and intellectual curiosity. You always seek to understand the underlying principles and long-term implications of any proposal. You value peer review and evidence-based conclusions.',
+    bias: 0.1,
+    color: '#7C3AED'
+  },
+  'carlos-e': {
+    name: 'Carlos E.',
+    personality: 'You are Carlos, an entrepreneur who thinks creatively about business opportunities and market disruption. You are optimistic about new technologies and business models, but also understand the importance of risk management. You focus on practical implementation and scalability.',
+    bias: 0.2,
+    color: '#EA580C'
+  }
+};
 
 // Smart positioning for new agents
 const getNextAgentPosition = (existingPeers: Node[], center: Node) => {
@@ -85,6 +119,32 @@ export function useDebateApp() {
   const [nodes, setNodes] = useState<Node[]>([
     { id: 'center', x: 50, y: 50, color: '#5AC46B', type: 'center' },
   ]);
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [defaultModel, setDefaultModel] = useState<string>('');
+  const [modelsLoading, setModelsLoading] = useState(true);
+
+  // Fetch available models on component mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setModelsLoading(true);
+        const response = await debateApi.getAvailableModels();
+        setAvailableModels(response.models);
+        setDefaultModel(response.default_model);
+      } catch (error) {
+        console.error('Failed to fetch available models:', error);
+        // Set fallback models if API fails
+        setAvailableModels([
+          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Default fallback model', provider: 'openai' }
+        ]);
+        setDefaultModel('openai/gpt-4o-mini');
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, []);
 
   const tools = useMemo<Tool[]>(() => [
     {
@@ -145,7 +205,8 @@ export function useDebateApp() {
         personality: '',
         bias: 0,
         avatar: '',
-        enabled: true
+        enabled: true,
+        model_id: undefined, // Will use default model
       };
       setConfiguration(prev => ({
         ...prev,
@@ -253,7 +314,8 @@ export function useDebateApp() {
       personality: '',
       bias: 0,
       avatar: '',
-      enabled: true
+      enabled: true,
+      model_id: undefined, // Will use default model
     };
     
     // Add node to canvas
@@ -269,40 +331,6 @@ export function useDebateApp() {
     setSelectedNodeId(newNodeId);
     setActiveOption('settings');
   }, [nodes, setActiveOption]);
-
-  // Predefined agent templates with full configurations
-  const prebuiltAgentTemplates = {
-    'javier-a': {
-      name: 'Javier A.',
-      personality: 'You are Javier, a conservative economist who values free market principles and fiscal responsibility. You tend to support traditional business approaches and are skeptical of government regulation. You base your arguments on economic data and historical precedents.',
-      bias: 0.3,
-      color: '#DC2626'
-    },
-    'maria-b': {
-      name: 'Maria B.',
-      personality: 'You are Maria, a progressive social activist who prioritizes social justice and equality. You advocate for policies that protect marginalized communities and support government intervention when it serves the public good. You are passionate about human rights and environmental issues.',
-      bias: -0.3,
-      color: '#059669'
-    },
-    'victor-c': {
-      name: 'Victor C.',
-      personality: 'You are Victor, a pragmatic technology professional who focuses on practical solutions and evidence-based decision making. You tend to remain neutral on political issues and prefer analyzing problems from multiple angles before forming opinions. You value innovation and efficiency.',
-      bias: 0.0,
-      color: '#2563EB'
-    },
-    'ana-d': {
-      name: 'Ana D.',
-      personality: 'You are Ana, an academic researcher who approaches discussions with scientific rigor and intellectual curiosity. You always seek to understand the underlying principles and long-term implications of any proposal. You value peer review and evidence-based conclusions.',
-      bias: 0.1,
-      color: '#7C3AED'
-    },
-    'carlos-e': {
-      name: 'Carlos E.',
-      personality: 'You are Carlos, an entrepreneur who thinks creatively about business opportunities and market disruption. You are optimistic about new technologies and business models, but also understand the importance of risk management. You focus on practical implementation and scalability.',
-      bias: 0.2,
-      color: '#EA580C'
-    }
-  };
 
   const handleSelectPrebuiltAgent = useCallback((templateId: string) => {
     console.log('Selected prebuilt agent:', templateId);
@@ -339,7 +367,8 @@ export function useDebateApp() {
       personality: template.personality,
       bias: template.bias,
       avatar: '',
-      enabled: true
+      enabled: true,
+      model_id: undefined, // Will use default model
     };
     
     // Add node to canvas
@@ -390,35 +419,29 @@ export function useDebateApp() {
         return;
       }
 
+      // NEW v3.0 request format
       const simulationRequest: SimulationRequest = {
         topic: configuration.topic,
-        profiles: enabledAgents.map(a => a.personality),
-        agent_names: enabledAgents.map(a => a.name),
+        agents: enabledAgents.map(a => ({
+          name: a.name,
+          profile: a.personality, // personality -> profile
+          model_id: a.model_id || undefined
+        })),
         max_iters: configuration.maxIterations,
         bias: enabledAgents.map(a => a.bias || 0),
-        stance: "neutral" // Could be derived from configuration later
+        stance: "neutral"
       };
 
-      // Create the simulation
-      console.log('Creating simulation...');
+      // Create and start simulation (single API call in v3.0)
+      console.log('Creating and starting simulation...');
       const createResponse = await debateApi.createSimulation(simulationRequest);
-      console.log('Simulation created:', createResponse.id);
+      console.log('Simulation created:', createResponse.simulation_id);
 
-      // Start the simulation
-      console.log('Starting simulation...');
-      await debateApi.startSimulation(createResponse.id);
-      console.log('Simulation started');
-
-      // Run the simulation to completion
-      console.log('Running simulation to completion...');
-      await debateApi.runSimulation(createResponse.id);
-      console.log('Simulation completed');
-
-      // Redirect to simulation page
-      router.push(`/simulation?id=${createResponse.id}`);
+      // Immediately redirect to simulation page where polling will happen
+      router.push(`/simulation?id=${createResponse.simulation_id}`);
     } catch (error) {
-      console.error('Error running simulation:', error);
-      alert(`Failed to run simulation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error creating simulation:', error);
+      alert(`Failed to create simulation: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
     }
@@ -445,6 +468,9 @@ export function useDebateApp() {
     selectedNodeId,
     highlightedNodeId: getHighlightedNodeId(),
     configuration,
+    availableModels,
+    defaultModel,
+    modelsLoading,
     handleNodeMove,
     handleNodeClick,
     handleCanvasClick,

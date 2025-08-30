@@ -91,11 +91,12 @@ export const styleGuide = {
 
 // Utility function to get style patterns
 export function getStylePattern(category: keyof typeof styleGuide, pattern: string, subPattern?: string): string {
-  const categoryStyles = styleGuide[category] as any;
+  const categoryStyles = styleGuide[category] as Record<string, unknown>;
   if (subPattern && categoryStyles[pattern]) {
-    return categoryStyles[pattern][subPattern] || '';
+    const patternObj = categoryStyles[pattern] as Record<string, string>;
+    return patternObj[subPattern] || '';
   }
-  return categoryStyles[pattern] || '';
+  return (categoryStyles[pattern] as string) || '';
 }
 
 // Utility function to combine multiple style patterns

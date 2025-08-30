@@ -14,6 +14,9 @@ export default function DebateAppLayout() {
     selectedNodeId,
     highlightedNodeId,
     configuration,
+    availableModels,
+    defaultModel,
+    modelsLoading,
     handleNodeMove,
     handleNodeClick,
     handleCanvasClick,
@@ -64,6 +67,9 @@ export default function DebateAppLayout() {
           <SettingsPanel 
             selectedNodeId={selectedNodeId}
             configuration={configuration}
+            availableModels={availableModels}
+            defaultModel={defaultModel}
+            modelsLoading={modelsLoading}
             onAgentUpdate={handleAgentUpdate}
             onSettingsUpdate={handleSettingsUpdate}
             onTopicUpdate={handleTopicUpdate}

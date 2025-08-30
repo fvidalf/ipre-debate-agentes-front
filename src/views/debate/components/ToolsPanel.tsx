@@ -1,7 +1,7 @@
 'use client';
 
 import { Tool } from '@/types';
-import { Card, CardContent } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import BasePanel from './BasePanel';
 

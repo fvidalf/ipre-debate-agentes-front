@@ -25,6 +25,7 @@ export type Agent = {
   bias?: number;
   avatar?: string;
   enabled: boolean;
+  model_id?: string; // AI model selection for this agent
 };
 
 export type DebateConfiguration = {

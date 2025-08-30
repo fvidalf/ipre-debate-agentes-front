@@ -1,6 +1,7 @@
 'use client';
 
 import { Agent, DebateConfiguration } from '@/types';
+import { ModelInfo } from '@/lib/api';
 import BasePanel from './BasePanel';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -8,6 +9,9 @@ import Textarea from '@/components/ui/Textarea';
 interface SettingsPanelProps {
   selectedNodeId: string | null;
   configuration: DebateConfiguration;
+  availableModels: ModelInfo[];
+  defaultModel: string;
+  modelsLoading: boolean;
   onAgentUpdate: (agentId: string, updates: Partial<Agent>) => void;
   onSettingsUpdate: (updates: Partial<DebateConfiguration['settings']>) => void;
   onTopicUpdate: (topic: string) => void;
@@ -19,6 +23,9 @@ interface SettingsPanelProps {
 export default function SettingsPanel({ 
   selectedNodeId,
   configuration,
+  availableModels,
+  defaultModel,
+  modelsLoading,
   onAgentUpdate,
   onSettingsUpdate,
   onTopicUpdate,
@@ -36,6 +43,9 @@ export default function SettingsPanel({
       <BasePanel title={`Configure ${selectedAgent.name}`}>
         <AgentConfigurationForm 
           agent={selectedAgent}
+          availableModels={availableModels}
+          defaultModel={defaultModel}
+          modelsLoading={modelsLoading}
           onUpdate={onAgentUpdate}
           onRemove={onRemoveAgent}
           onClose={onClose}
@@ -57,8 +67,11 @@ export default function SettingsPanel({
   );
 }
 
-function AgentConfigurationForm({ agent, onUpdate, onRemove, onClose }: {
+function AgentConfigurationForm({ agent, availableModels, defaultModel, modelsLoading, onUpdate, onRemove, onClose }: {
   agent: Agent;
+  availableModels: ModelInfo[];
+  defaultModel: string;
+  modelsLoading: boolean;
   onUpdate: (agentId: string, updates: Partial<Agent>) => void;
   onRemove: (agentId: string) => void;
   onClose: () => void;
@@ -83,6 +96,37 @@ function AgentConfigurationForm({ agent, onUpdate, onRemove, onClose }: {
           onChange={(e) => onUpdate(agent.id, { name: e.target.value })}
           placeholder="Enter agent name"
         />
+      </div>
+
+      {/* AI Model selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          AI Model
+        </label>
+        {modelsLoading ? (
+          <div className="text-sm text-gray-500 italic">Loading models...</div>
+        ) : (
+          <select
+            value={agent.model_id || ''}
+            onChange={(e) => onUpdate(agent.id, { model_id: e.target.value || undefined })}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Use Default ({defaultModel})</option>
+            {availableModels.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name} ({model.provider})
+              </option>
+            ))}
+          </select>
+        )}
+        {!modelsLoading && availableModels.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            {agent.model_id 
+              ? availableModels.find(m => m.id === agent.model_id)?.description 
+              : `Using default model: ${defaultModel}`
+            }
+          </p>
+        )}
       </div>
       
       {/* Personality prompt - main configuration */}
@@ -194,40 +238,6 @@ function GeneralSettingsForm({ configuration, onSettingsUpdate, onTopicUpdate, o
               onChange={(e) => onSettingsUpdate({ timeout: parseInt(e.target.value) || 30 })}
               className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
             />
-          </div>
-        </div>
-      </div>
-
-      {/* AI Model Settings */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-neutral-800">AI Model</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm text-neutral-600 mb-1">Model</label>
-            <select 
-              value={configuration.settings.model}
-              onChange={(e) => onSettingsUpdate({ model: e.target.value })}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
-            >
-              <option>GPT-4</option>
-              <option>GPT-3.5-turbo</option>
-              <option>Claude-3</option>
-            </select>
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-neutral-600">Temperature</label>
-            <input 
-              type="range" 
-              min="0" 
-              max="2" 
-              step="0.1" 
-              value={configuration.settings.temperature}
-              onChange={(e) => onSettingsUpdate({ temperature: parseFloat(e.target.value) })}
-              className="flex-1 ml-3"
-            />
-            <span className="text-sm text-neutral-500 ml-2 w-8">
-              {configuration.settings.temperature.toFixed(1)}
-            </span>
           </div>
         </div>
       </div>
