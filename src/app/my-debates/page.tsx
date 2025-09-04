@@ -1,5 +1,5 @@
 import { MyDebatesView } from '@/views/my-debates';
 
-export default function Home() {
+export default function MyDebatesPage() {
   return <MyDebatesView />;
 }

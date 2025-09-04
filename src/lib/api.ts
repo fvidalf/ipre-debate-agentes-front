@@ -27,6 +27,9 @@ export interface SimulationRequest {
   stance?: string;
   embedding_model?: string;
   embedding_config?: object;
+  config_id?: string;
+  config_name?: string;
+  config_description?: string;
 }
 
 export interface SimulationCreateResponse {
@@ -73,6 +76,125 @@ export interface StopResponse {
   simulation_id: string;
   status: string;
   message: string;
+}
+
+// Agent Templates interfaces
+export interface AgentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  visibility: 'public' | 'private';
+  config: {
+    model: string;
+    temperature: number;
+    max_tokens: number;
+    background: string;
+    bias: number;
+    personality_traits: string[];
+    speaking_style: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentTemplatesResponse {
+  agents: AgentTemplate[];
+  total: number;
+}
+
+export interface GetTemplatesParams {
+  limit?: number;
+  offset?: number;
+}
+
+// Config interfaces
+export interface Config {
+  id: string;
+  name: string;
+  description: string;
+  visibility: 'public' | 'private';
+  parameters: {
+    max_iters: number;
+    bias: number[];
+    stance: string;
+    embedding_model: string;
+    agent_count: number;
+  };
+  version_number: number;
+  source_template_id?: string;
+  agents?: ConfigAgent[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConfigAgent {
+  position: number;
+  name: string;
+  background: string;
+  snapshot: {
+    profile: string;
+    model_id: string;
+  };
+  created_at: string;
+}
+
+export interface ConfigsResponse {
+  configs: Config[];
+  total: number;
+}
+
+export interface ConfigRun {
+  simulation_id: string;
+  config_id: string;
+  config_name: string;
+  config_version_when_run: number;
+  is_latest_version: boolean;
+  status: "created" | "running" | "finished" | "failed" | "stopped";
+  is_finished: boolean;
+  created_at: string;
+  finished_at: string | null;
+}
+
+export interface ConfigRunsResponse {
+  runs: ConfigRun[];
+  total: number;
+}
+
+// Config creation and update interfaces
+export interface CreateConfigResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  visibility: 'public' | 'private';
+  parameters: {
+    topic: string;
+    max_iters: number;
+    bias: number[];
+    stance: string;
+    embedding_model: string;
+    embedding_config: object;
+    agents: ConfigAgent[];
+  };
+  version_number: number;
+  agents: ConfigAgent[];
+  source_template_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateConfigRequest {
+  name?: string;
+  description?: string;
+  topic?: string;
+  agents?: Array<{
+    name: string;
+    profile: string;
+    model_id?: string;
+  }>;
+  max_iters?: number;
+  bias?: number[];
+  stance?: string;
+  embedding_model?: string;
 }
 
 class DebateApiService {
@@ -123,6 +245,57 @@ class DebateApiService {
 
   async healthCheck(): Promise<{ ok: boolean }> {
     return this.makeRequest<{ ok: boolean }>('/healthz');
+  }
+
+  // Agent Templates methods
+  async getAgentTemplates(params?: GetTemplatesParams): Promise<AgentTemplatesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
+    
+    const endpoint = `/agents/templates${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest<AgentTemplatesResponse>(endpoint);
+  }
+
+  async getAgentTemplate(agentId: string): Promise<AgentTemplate> {
+    return this.makeRequest<AgentTemplate>(`/agents/templates/${agentId}`);
+  }
+
+  // Config methods
+  async getConfigs(params?: GetTemplatesParams): Promise<ConfigsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
+    
+    const endpoint = `/configs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest<ConfigsResponse>(endpoint);
+  }
+
+  async createConfig(): Promise<CreateConfigResponse> {
+    return this.makeRequest<CreateConfigResponse>('/configs', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async updateConfig(configId: string, updates: UpdateConfigRequest): Promise<Config> {
+    return this.makeRequest<Config>(`/configs/${configId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async getConfig(configId: string): Promise<Config> {
+    return this.makeRequest<Config>(`/configs/${configId}`);
+  }
+
+  async getConfigRuns(configId: string, params?: GetTemplatesParams): Promise<ConfigRunsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
+    
+    const endpoint = `/configs/${configId}/runs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest<ConfigRunsResponse>(endpoint);
   }
 }
 

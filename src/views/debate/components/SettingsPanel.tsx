@@ -77,113 +77,118 @@ function AgentConfigurationForm({ agent, availableModels, defaultModel, modelsLo
   onClose: () => void;
 }) {
   return (
-    <div className="space-y-6">
-      {/* Back button */}
-      <button 
-        onClick={onClose} 
-        className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
-      >
-        ← Back to general settings
-      </button>
-      
-      {/* Agent name */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Agent Name
-        </label>
-        <Input
-          value={agent.name}
-          onChange={(e) => onUpdate(agent.id, { name: e.target.value })}
-          placeholder="Enter agent name"
-        />
+    <div className="h-full flex flex-col">
+      {/* Back button - fixed at top */}
+      <div className="flex-shrink-0 mb-4">
+        <button 
+          onClick={onClose} 
+          className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+        >
+          ← Back to general settings
+        </button>
       </div>
 
-      {/* AI Model selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          AI Model
-        </label>
-        {modelsLoading ? (
-          <div className="text-sm text-gray-500 italic">Loading models...</div>
-        ) : (
-          <select
-            value={agent.model_id || ''}
-            onChange={(e) => onUpdate(agent.id, { model_id: e.target.value || undefined })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      {/* Scrollable form content */}
+      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+        {/* Agent name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Agent Name
+          </label>
+          <Input
+            value={agent.name}
+            onChange={(e) => onUpdate(agent.id, { name: e.target.value })}
+            placeholder="Enter agent name"
+          />
+        </div>
+
+        {/* AI Model selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            AI Model
+          </label>
+          {modelsLoading ? (
+            <div className="text-sm text-gray-500 italic">Loading models...</div>
+          ) : (
+            <select
+              value={agent.model_id || ''}
+              onChange={(e) => onUpdate(agent.id, { model_id: e.target.value || undefined })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Use Default ({defaultModel})</option>
+              {availableModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name} ({model.provider})
+                </option>
+              ))}
+            </select>
+          )}
+          {!modelsLoading && availableModels.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">
+              {agent.model_id 
+                ? availableModels.find(m => m.id === agent.model_id)?.description 
+                : `Using default model: ${defaultModel}`
+              }
+            </p>
+          )}
+        </div>
+        
+        {/* Personality prompt - main configuration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Personality Prompt
+          </label>
+          <Textarea
+            value={agent.personality}
+            onChange={(e) => onUpdate(agent.id, { personality: e.target.value })}
+            placeholder="Describe this agent's personality, beliefs, and debate style..."
+            rows={8}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Bias slider */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bias: {agent.bias?.toFixed(2) || '0.00'}
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={agent.bias || 0}
+            onChange={(e) => onUpdate(agent.id, { bias: parseFloat(e.target.value) })}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Enable/disable toggle */}
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">
+            Enabled for simulation
+          </label>
+          <input
+            type="checkbox"
+            checked={agent.enabled}
+            onChange={(e) => onUpdate(agent.id, { enabled: e.target.checked })}
+            className="w-4 h-4"
+          />
+        </div>
+        
+        {/* Remove agent button */}
+        <div className="pt-4 border-t border-gray-200">
+          <button
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to remove ${agent.name}?`)) {
+                onRemove(agent.id);
+              }
+            }}
+            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
           >
-            <option value="">Use Default ({defaultModel})</option>
-            {availableModels.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name} ({model.provider})
-              </option>
-            ))}
-          </select>
-        )}
-        {!modelsLoading && availableModels.length > 0 && (
-          <p className="text-xs text-gray-500 mt-1">
-            {agent.model_id 
-              ? availableModels.find(m => m.id === agent.model_id)?.description 
-              : `Using default model: ${defaultModel}`
-            }
-          </p>
-        )}
-      </div>
-      
-      {/* Personality prompt - main configuration */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Personality Prompt
-        </label>
-        <Textarea
-          value={agent.personality}
-          onChange={(e) => onUpdate(agent.id, { personality: e.target.value })}
-          placeholder="Describe this agent's personality, beliefs, and debate style..."
-          rows={8}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Bias slider */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Bias: {agent.bias?.toFixed(2) || '0.00'}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={agent.bias || 0}
-          onChange={(e) => onUpdate(agent.id, { bias: parseFloat(e.target.value) })}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Enable/disable toggle */}
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-700">
-          Enabled for simulation
-        </label>
-        <input
-          type="checkbox"
-          checked={agent.enabled}
-          onChange={(e) => onUpdate(agent.id, { enabled: e.target.checked })}
-          className="w-4 h-4"
-        />
-      </div>
-      
-      {/* Remove agent button */}
-      <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={() => {
-            if (window.confirm(`Are you sure you want to remove ${agent.name}?`)) {
-              onRemove(agent.id);
-            }
-          }}
-          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-        >
-          Remove Agent
-        </button>
+            Remove Agent
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -200,7 +205,7 @@ function GeneralSettingsForm({ configuration, onSettingsUpdate, onTopicUpdate, o
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-y-auto space-y-6 pr-2">
       
       {/* Topic */}
       <div className="space-y-3">

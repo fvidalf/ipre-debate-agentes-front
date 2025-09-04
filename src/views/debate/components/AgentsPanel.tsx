@@ -3,7 +3,9 @@
 import { Agent } from '@/types';
 import BasePanel from './BasePanel';
 import Button from '@/components/ui/Button';
-import { User } from 'lucide-react';
+import { User, Loader } from 'lucide-react';
+import { useAgentTemplates } from '@/hooks/useAgentTemplates';
+import { getTemplateColor } from '@/lib/agentUtils';
 
 interface AgentsPanelProps {
   agents: Agent[];
@@ -12,39 +14,7 @@ interface AgentsPanelProps {
   onSelectPrebuiltAgent?: (templateId: string) => void;
 }
 
-// Pre-built agent templates with descriptions
-const prebuiltAgents = [
-  {
-    id: 'javier-a',
-    name: 'Javier A.',
-    description: 'Conservative economist focused on free market principles',
-    color: '#DC2626'
-  },
-  {
-    id: 'maria-b',
-    name: 'Maria B.',
-    description: 'Progressive activist advocating for social justice',
-    color: '#059669'
-  },
-  {
-    id: 'victor-c',
-    name: 'Victor C.',
-    description: 'Pragmatic technologist with evidence-based approach',
-    color: '#2563EB'
-  },
-  {
-    id: 'ana-d',
-    name: 'Ana D.',
-    description: 'Academic researcher with scientific rigor',
-    color: '#7C3AED'
-  },
-  {
-    id: 'carlos-e',
-    name: 'Carlos E.',
-    description: 'Creative entrepreneur focused on innovation',
-    color: '#EA580C'
-  },
-];
+const TEMPLATE_FETCH_PARAMS = { limit: 20 } as const;
 
 export default function AgentsPanel({ 
   agents, 
@@ -52,6 +22,8 @@ export default function AgentsPanel({
   onCreateAgent,
   onSelectPrebuiltAgent 
 }: AgentsPanelProps) {
+  const { templates, isLoading, error } = useAgentTemplates(TEMPLATE_FETCH_PARAMS);
+
   return (
     <BasePanel title="Agents">
       <div className="space-y-4 h-screen max-h-screen overflow-y-auto flex flex-col">
@@ -72,30 +44,53 @@ export default function AgentsPanel({
             Pre-built agents
           </h3>
           
-          <div className="space-y-2">
-            {prebuiltAgents.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => onSelectPrebuiltAgent?.(template.id)}
-                className="w-full p-3 border border-neutral-200 rounded-xl bg-white hover:bg-neutral-50 hover:shadow-sm transition-all text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                    style={{ backgroundColor: template.color }}
-                  >
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-neutral-900">{template.name}</div>
-                    <div className="text-xs text-neutral-600 mt-0.5 line-clamp-2">
-                      {template.description}
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-6 h-6 animate-spin text-neutral-500" />
+              <span className="ml-2 text-sm text-neutral-500">Loading templates...</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3 border border-red-200 rounded-xl bg-red-50">
+              <p className="text-sm text-red-600">
+                Failed to load templates: {error}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !error && (
+            <div className="space-y-2">
+              {templates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => onSelectPrebuiltAgent?.(template.id)}
+                  className="w-full p-3 border border-neutral-200 rounded-xl bg-white hover:bg-neutral-50 hover:shadow-sm transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                      style={{ backgroundColor: getTemplateColor(template.id) }}
+                    >
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-neutral-900">{template.name}</div>
+                      <div className="text-xs text-neutral-600 mt-0.5 line-clamp-2">
+                        {template.description}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+
+              {templates.length === 0 && !isLoading && (
+                <p className="text-sm text-neutral-500 text-center py-4">
+                  No templates available
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Current Agents */}

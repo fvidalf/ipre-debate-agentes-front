@@ -15,6 +15,7 @@ interface CanvasProps {
   onRun?: () => void;
   canSave?: boolean;
   isRunning?: boolean;
+  isSaving?: boolean;
   apiConnected?: boolean | null;
 }
 
@@ -28,6 +29,7 @@ export default function Canvas({
   onRun, 
   canSave = false, 
   isRunning = false,
+  isSaving = false,
   apiConnected = null 
 }: CanvasProps) {
   const [dragState, setDragState] = useState<{
@@ -160,16 +162,25 @@ export default function Canvas({
         
         <button
           onClick={onSave}
-          disabled={!canSave}
+          disabled={!canSave || isSaving}
           className={`
-            h-11 px-4 rounded-xl border font-semibold transition-all
-            ${canSave 
+            h-11 px-4 rounded-xl border font-semibold transition-all flex items-center gap-2
+            ${canSave && !isSaving
               ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50' 
               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
             }
           `}
         >
-          💾 Save
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              💾 Save
+            </>
+          )}
         </button>
         <button
           onClick={onRun}

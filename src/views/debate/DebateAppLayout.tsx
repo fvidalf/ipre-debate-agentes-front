@@ -3,7 +3,11 @@
 import { Sidebar, Canvas, ToolsPanel, AgentsPanel, SettingsPanel } from './components';
 import { useDebateApp } from '@/hooks/useDebateApp';
 
-export default function DebateAppLayout() {
+interface DebateAppLayoutProps {
+  configId?: string;
+}
+
+export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
   const {
     activeOption,
     setActiveOption,
@@ -11,12 +15,15 @@ export default function DebateAppLayout() {
     tools,
     agents,
     isRunning,
+    isSaving,
     selectedNodeId,
     highlightedNodeId,
     configuration,
     availableModels,
     defaultModel,
     modelsLoading,
+    configLoading,
+    configLoadError,
     handleNodeMove,
     handleNodeClick,
     handleCanvasClick,
@@ -33,7 +40,47 @@ export default function DebateAppLayout() {
     handleRun,
     canSave,
     setSelectedNodeId,
-  } = useDebateApp();
+  } = useDebateApp(configId);
+
+  // Show loading state when loading config
+  if (configLoading) {
+    return (
+      <div className="h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading debate configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state when config loading fails
+  if (configLoadError) {
+    return (
+      <div className="h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-red-800 font-medium mb-2">Failed to load debate configuration</h3>
+            <p className="text-red-600 text-sm mb-4">{configLoadError}</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              >
+                Try again
+              </button>
+              <a
+                href="/my-debates"
+                className="block w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                Back to My Debates
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Handle sidebar option changes with context-aware node deselection
   const handleSidebarOptionChange = (option: typeof activeOption) => {
@@ -107,6 +154,7 @@ export default function DebateAppLayout() {
         onRun={handleRun}
         canSave={canSave}
         isRunning={isRunning}
+        isSaving={isSaving}
       />
     </div>
   );

@@ -1,5 +1,6 @@
-import { DebateAppLayout } from '@/views/debate';
+import { redirect } from 'next/navigation';
 
 export default function DebatePage() {
-  return <DebateAppLayout />;
+  // Redirect old debate route to new editor route
+  redirect('/editor');
 }
