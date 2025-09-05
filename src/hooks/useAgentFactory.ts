@@ -150,12 +150,21 @@ export function useAgentFactory(): UseAgentFactoryReturn {
     totalAgents: number,
     centerNode: Node
   ): { agent: Agent; node: Node } => {
-    // Calculate position in a circle around the center
-    const radius = 25;
-    const angleStep = (2 * Math.PI) / totalAgents;
-    const angle = configAgent.position * angleStep;
-    const x = Math.max(10, Math.min(90, centerNode.x + radius * Math.cos(angle)));
-    const y = Math.max(10, Math.min(90, centerNode.y + radius * Math.sin(angle)));
+    
+    let x: number, y: number;
+
+    // Use stored canvas position if available, otherwise calculate position
+    if (configAgent.canvas_position) {
+      x = configAgent.canvas_position.x;
+      y = configAgent.canvas_position.y;
+    } else {
+      // Fallback to circular positioning for legacy configs
+      const radius = 25;
+      const angleStep = (2 * Math.PI) / totalAgents;
+      const angle = configAgent.position * angleStep;
+      x = Math.max(10, Math.min(90, centerNode.x + radius * Math.cos(angle)));
+      y = Math.max(10, Math.min(90, centerNode.y + radius * Math.sin(angle)));
+    }
 
     // Generate unique node ID
     const nodeId = `agent-${generateId()}`;

@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Agent, DebateConfiguration } from '@/types';
+import { Agent, EditorConfig } from '@/types';
 
-interface UseDebateConfigurationReturn {
-  configuration: DebateConfiguration;
+interface UseEditorConfigReturn {
+  configuration: EditorConfig;
+  updateName: (name: string) => void;
+  updateDescription: (description: string) => void;
   updateTopic: (topic: string) => void;
   updateMaxIterations: (maxIterations: number) => void;
-  updateSettings: (updates: Partial<DebateConfiguration['settings']>) => void;
+  updateSettings: (updates: Partial<EditorConfig['settings']>) => void;
   addAgent: (agent: Agent) => void;
   updateAgent: (agentId: string, updates: Partial<Agent>) => void;
   removeAgent: (agentId: string) => void;
@@ -16,7 +18,9 @@ interface UseDebateConfigurationReturn {
   hasAgents: () => boolean;
 }
 
-const DEFAULT_CONFIGURATION: DebateConfiguration = {
+const DEFAULT_CONFIGURATION: EditorConfig = {
+  name: "New Debate",
+  description: "",
   topic: "Should artificial intelligence be regulated by governments?",
   maxIterations: 21,
   agents: [],
@@ -27,8 +31,8 @@ const DEFAULT_CONFIGURATION: DebateConfiguration = {
   }
 };
 
-export function useDebateConfiguration(initialConfig?: Partial<DebateConfiguration>): UseDebateConfigurationReturn {
-  const [configuration, setConfiguration] = useState<DebateConfiguration>({
+export function useEditorConfig(initialConfig?: Partial<EditorConfig>): UseEditorConfigReturn {
+  const [configuration, setConfiguration] = useState<EditorConfig>({
     ...DEFAULT_CONFIGURATION,
     ...initialConfig,
   });
@@ -37,11 +41,19 @@ export function useDebateConfiguration(initialConfig?: Partial<DebateConfigurati
     setConfiguration(prev => ({ ...prev, topic }));
   }, []);
 
+  const updateName = useCallback((name: string) => {
+    setConfiguration(prev => ({ ...prev, name }));
+  }, []);
+
+  const updateDescription = useCallback((description: string) => {
+    setConfiguration(prev => ({ ...prev, description }));
+  }, []);
+
   const updateMaxIterations = useCallback((maxIterations: number) => {
     setConfiguration(prev => ({ ...prev, maxIterations }));
   }, []);
 
-  const updateSettings = useCallback((updates: Partial<DebateConfiguration['settings']>) => {
+  const updateSettings = useCallback((updates: Partial<EditorConfig['settings']>) => {
     setConfiguration(prev => ({
       ...prev,
       settings: { ...prev.settings, ...updates }
@@ -85,6 +97,8 @@ export function useDebateConfiguration(initialConfig?: Partial<DebateConfigurati
 
   return {
     configuration,
+    updateName,
+    updateDescription,
     updateTopic,
     updateMaxIterations,
     updateSettings,

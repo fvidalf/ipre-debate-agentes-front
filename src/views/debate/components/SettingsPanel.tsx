@@ -1,6 +1,6 @@
 'use client';
 
-import { Agent, DebateConfiguration } from '@/types';
+import { Agent, EditorConfig } from '@/types';
 import { ModelInfo } from '@/lib/api';
 import BasePanel from './BasePanel';
 import Input from '@/components/ui/Input';
@@ -8,12 +8,14 @@ import Textarea from '@/components/ui/Textarea';
 
 interface SettingsPanelProps {
   selectedNodeId: string | null;
-  configuration: DebateConfiguration;
+  configuration: EditorConfig;
   availableModels: ModelInfo[];
   defaultModel: string;
   modelsLoading: boolean;
   onAgentUpdate: (agentId: string, updates: Partial<Agent>) => void;
-  onSettingsUpdate: (updates: Partial<DebateConfiguration['settings']>) => void;
+  onNameUpdate: (name: string) => void;
+  onDescriptionUpdate: (description: string) => void;
+  onSettingsUpdate: (updates: Partial<EditorConfig['settings']>) => void;
   onTopicUpdate: (topic: string) => void;
   onMaxIterationsUpdate: (maxIterations: number) => void;
   onRemoveAgent: (agentId: string) => void;
@@ -27,6 +29,8 @@ export default function SettingsPanel({
   defaultModel,
   modelsLoading,
   onAgentUpdate,
+  onNameUpdate,
+  onDescriptionUpdate,
   onSettingsUpdate,
   onTopicUpdate,
   onMaxIterationsUpdate,
@@ -59,6 +63,8 @@ export default function SettingsPanel({
     <BasePanel title="Settings">
       <GeneralSettingsForm 
         configuration={configuration}
+        onNameUpdate={onNameUpdate}
+        onDescriptionUpdate={onDescriptionUpdate}
         onSettingsUpdate={onSettingsUpdate}
         onTopicUpdate={onTopicUpdate}
         onMaxIterationsUpdate={onMaxIterationsUpdate}
@@ -194,9 +200,11 @@ function AgentConfigurationForm({ agent, availableModels, defaultModel, modelsLo
   );
 }
 
-function GeneralSettingsForm({ configuration, onSettingsUpdate, onTopicUpdate, onMaxIterationsUpdate }: {
-  configuration: DebateConfiguration;
-  onSettingsUpdate: (updates: Partial<DebateConfiguration['settings']>) => void;
+function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate, onSettingsUpdate, onTopicUpdate, onMaxIterationsUpdate }: {
+  configuration: EditorConfig;
+  onNameUpdate: (name: string) => void;
+  onDescriptionUpdate: (description: string) => void;
+  onSettingsUpdate: (updates: Partial<EditorConfig['settings']>) => void;
   onTopicUpdate: (topic: string) => void;
   onMaxIterationsUpdate: (maxIterations: number) => void;
 }) {
@@ -206,6 +214,29 @@ function GeneralSettingsForm({ configuration, onSettingsUpdate, onTopicUpdate, o
 
   return (
     <div className="h-full overflow-y-auto space-y-6 pr-2">
+
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-neutral-800">Debate Settings</h3>
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-600 mb-1">Debate Name</label>
+            <Textarea
+              value={configuration.name}
+              onChange={(e) => onNameUpdate(e.target.value)}
+              placeholder="Enter a name for this debate..."
+              rows={3}
+              className="w-full"
+            />
+
+            <label className="block text-sm text-neutral-600 mb-1">Debate Description</label>
+            <Textarea
+              value={configuration.description}
+              onChange={(e) => onDescriptionUpdate(e.target.value)}
+              placeholder="Enter a description for this debate..."
+              rows={3}
+              className="w-full"
+            />
+        </div>
+      </div>
       
       {/* Topic */}
       <div className="space-y-3">

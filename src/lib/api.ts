@@ -114,6 +114,7 @@ export interface Config {
   description: string;
   visibility: 'public' | 'private';
   parameters: {
+    topic: string;
     max_iters: number;
     bias: number[];
     stance: string;
@@ -131,6 +132,10 @@ export interface ConfigAgent {
   position: number;
   name: string;
   background: string;
+  canvas_position?: {
+    x: number;
+    y: number;
+  };
   snapshot: {
     profile: string;
     model_id: string;
@@ -190,6 +195,10 @@ export interface UpdateConfigRequest {
     name: string;
     profile: string;
     model_id?: string;
+    canvas_position?: {
+      x: number;
+      y: number;
+    };
   }>;
   max_iters?: number;
   bias?: number[];
@@ -268,7 +277,9 @@ class DebateApiService {
     if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
     
     const endpoint = `/configs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return this.makeRequest<ConfigsResponse>(endpoint);
+    const result = await this.makeRequest<ConfigsResponse>(endpoint);
+    console.log('DebateApiService.getConfigs - Raw response:', result);
+    return result;
   }
 
   async createConfig(): Promise<CreateConfigResponse> {
@@ -286,7 +297,11 @@ class DebateApiService {
   }
 
   async getConfig(configId: string): Promise<Config> {
-    return this.makeRequest<Config>(`/configs/${configId}`);
+    console.log('🔍 DebateApiService.getConfig - Fetching config:', configId);
+    const result = await this.makeRequest<Config>(`/configs/${configId}`);
+    console.log('📦 DebateApiService.getConfig - Raw response:', result);
+    console.log('👥 DebateApiService.getConfig - Agents in response:', result.agents);
+    return result;
   }
 
   async getConfigRuns(configId: string, params?: GetTemplatesParams): Promise<ConfigRunsResponse> {

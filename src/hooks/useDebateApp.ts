@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Tool } from '@/types';
 import { debateApi, ModelInfo } from '@/lib/api';
-import { useDebateConfiguration } from './useDebateConfiguration';
+import { useEditorConfig } from './useEditorConfig';
 import { useCanvasState } from './useCanvasState';
 import { useAgentFactory } from './useAgentFactory';
 import { useSimulationControl } from './useSimulationControl';
@@ -21,7 +21,7 @@ export function useDebateApp(configId?: string) {
   const loadedConfigIdRef = useRef<string | null>(null);
 
   // Composed hooks
-  const debateConfig = useDebateConfiguration();
+  const debateConfig = useEditorConfig();
   const canvasState = useCanvasState();
   const agentFactory = useAgentFactory();
   const simulationControl = useSimulationControl(configId);
@@ -49,10 +49,13 @@ export function useDebateApp(configId?: string) {
         setConfigLoadError(null);
         const config = await debateApi.getConfig(configId);
         
+        
         if (isCancelled) return; // Don't update state if cancelled
         
         // Update debate configuration with loaded data
-        debateConfig.updateTopic(config.parameters.stance);
+        debateConfig.updateName(config.name);
+        debateConfig.updateDescription(config.description);
+        debateConfig.updateTopic(config.parameters.topic);
         debateConfig.updateMaxIterations(config.parameters.max_iters);
         
         // Clear existing agents and nodes (except center)
@@ -67,7 +70,7 @@ export function useDebateApp(configId?: string) {
           const centerNode = canvasState.getCenterNode();
           if (centerNode) {
             // Add agents from the loaded config
-            config.agents.forEach((configAgent) => {
+            config.agents.forEach((configAgent, index) => {
               const { agent, node } = agentFactory.createAgentFromConfigData(
                 configAgent, 
                 config.agents!.length, // Pass total count instead of index
@@ -76,7 +79,10 @@ export function useDebateApp(configId?: string) {
               canvasState.addNode(node);
               debateConfig.addAgent(agent);
             });
+          } else {
+            console.error('useDebateApp - No center node found');
           }
+        } else {
         }
       } catch (error) {
         if (isCancelled) return; // Don't update state if cancelled
@@ -174,7 +180,6 @@ export function useDebateApp(configId?: string) {
 
   // Agent creation from blank
   const handleCreateAgent = useCallback(() => {
-    console.log('Creating new agent...');
     
     const centerNode = canvasState.getCenterNode();
     if (!centerNode) return;
@@ -193,7 +198,6 @@ export function useDebateApp(configId?: string) {
 
   // Agent creation from template (the "baking" process)
   const handleSelectPrebuiltAgent = useCallback(async (templateId: string) => {
-    console.log('Selected prebuilt agent:', templateId);
     
     const centerNode = canvasState.getCenterNode();
     if (!centerNode) return;
@@ -236,7 +240,6 @@ export function useDebateApp(configId?: string) {
 
   // Agent selection handler
   const handleAgentSelect = useCallback((agentId: string) => {
-    console.log('Agent selected:', agentId);
     
     const agent = debateConfig.getAgent(agentId);
     if (agent) {
@@ -247,7 +250,6 @@ export function useDebateApp(configId?: string) {
 
   // Tool toggle handler
   const handleToolToggle = useCallback((toolId: string) => {
-    console.log('Tool toggled:', toolId);
     // TODO: Implement tool activation/deactivation logic
   }, []);
 
@@ -274,6 +276,8 @@ export function useDebateApp(configId?: string) {
     configuration: debateConfig.configuration,
     agents: debateConfig.configuration.agents,
     handleAgentUpdate: debateConfig.updateAgent,
+    handleNameUpdate: debateConfig.updateName,
+    handleDescriptionUpdate: debateConfig.updateDescription,
     handleSettingsUpdate: debateConfig.updateSettings,
     handleTopicUpdate: debateConfig.updateTopic,
     handleMaxIterationsUpdate: debateConfig.updateMaxIterations,
@@ -288,7 +292,7 @@ export function useDebateApp(configId?: string) {
     isRunning: simulationControl.isRunning,
     isSaving: simulationControl.isSaving,
     handleRun: () => simulationControl.handleRun(debateConfig.configuration),
-    handleSave: () => simulationControl.handleSave(debateConfig.configuration),
+    handleSave: () => simulationControl.handleSave(debateConfig.configuration, canvasState.nodes),
     canSave: simulationControl.canSave(debateConfig.hasAgents()),
     
     // External Data

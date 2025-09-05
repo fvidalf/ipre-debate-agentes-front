@@ -11,7 +11,7 @@ interface UseUIStateReturn {
 }
 
 export function useUIState(): UseUIStateReturn {
-  const [activeOption, setActiveOption] = useState<SidebarOption>('tools');
+  const [activeOption, setActiveOption] = useState<SidebarOption>('settings');
 
   const getHighlightedNodeId = useCallback((selectedNodeId: string | null) => {
     // Context-aware highlighting: only highlight nodes when in settings view

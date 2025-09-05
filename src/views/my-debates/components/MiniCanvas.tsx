@@ -2,6 +2,7 @@
 
 import { User, Mic } from 'lucide-react';
 import { Config } from '@/lib/api';
+import { configToCanvasNodes } from '@/lib/configUtils';
 
 interface MiniCanvasProps {
   config: Config;
@@ -9,33 +10,9 @@ interface MiniCanvasProps {
 }
 
 export default function MiniCanvas({ config, className = '' }: MiniCanvasProps) {
-  // Generate positions for agents based on config
-  const generateNodePositions = (agentCount: number) => {
-    const nodes: Array<{ id: string; x: number; y: number; type: 'center' | 'peer' }> = [
-      { id: 'center', x: 50, y: 50, type: 'center' }
-    ];
-    
-    if (agentCount > 0) {
-      const radius = 25; // Distance from center
-      const angleStep = (2 * Math.PI) / agentCount;
-      
-      for (let i = 0; i < agentCount; i++) {
-        const angle = i * angleStep;
-        const x = 50 + radius * Math.cos(angle);
-        const y = 50 + radius * Math.sin(angle);
-        nodes.push({ 
-          id: `agent-${i}`, 
-          x: Math.max(15, Math.min(85, x)), 
-          y: Math.max(15, Math.min(85, y)), 
-          type: 'peer'
-        });
-      }
-    }
-    
-    return nodes;
-  };
-
-  const nodes = generateNodePositions(config.parameters.agent_count);
+  
+  // Convert config to canvas nodes using the shared utility
+  const nodes = configToCanvasNodes(config);
   const centerNode = nodes.find(n => n.type === 'center');
   const peerNodes = nodes.filter(n => n.type === 'peer');
 

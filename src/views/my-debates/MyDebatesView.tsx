@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useDebateConfigs } from '@/hooks/useDebateConfigs';
+import { useConfigs } from '@/hooks/useConfigs';
 import DebateItem from './components/DebateItem';
 import Button from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ export default function MyDebatesView() {
     expandedConfigs,
     toggleConfig,
     refreshConfigs,
-  } = useDebateConfigs();
+  } = useConfigs();
 
   const handleCreateNewDebate = async () => {
     try {
@@ -154,7 +154,8 @@ export default function MyDebatesView() {
             {configs.map((config) => (
               <DebateItem
                 key={config.id}
-                config={config}
+                configId={config.id}
+                initialConfig={config}
                 runs={selectedConfigId === config.id ? selectedConfigRuns : []}
                 runsLoading={selectedConfigId === config.id && runsLoading}
                 isExpanded={expandedConfigs.has(config.id)}

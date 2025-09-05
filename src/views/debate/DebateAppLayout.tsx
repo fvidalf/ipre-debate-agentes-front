@@ -27,6 +27,8 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
     handleNodeMove,
     handleNodeClick,
     handleCanvasClick,
+    handleNameUpdate,
+    handleDescriptionUpdate,
     handleAgentUpdate,
     handleSettingsUpdate,
     handleTopicUpdate,
@@ -118,6 +120,8 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
             defaultModel={defaultModel}
             modelsLoading={modelsLoading}
             onAgentUpdate={handleAgentUpdate}
+            onNameUpdate={handleNameUpdate}
+            onDescriptionUpdate={handleDescriptionUpdate}
             onSettingsUpdate={handleSettingsUpdate}
             onTopicUpdate={handleTopicUpdate}
             onMaxIterationsUpdate={handleMaxIterationsUpdate}
@@ -125,6 +129,10 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
             onClose={() => setSelectedNodeId(null)}
           />
         );
+      case 'back':
+        // This case shouldn't be reached since back navigates away,
+        // but including it for completeness
+        return null;
       default:
         return null;
     }

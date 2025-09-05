@@ -2,14 +2,15 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { DebateConfiguration } from '@/types';
+import { EditorConfig, Node } from '@/types';
 import { debateApi, SimulationRequest } from '@/lib/api';
+import { agentsToConfigUpdate } from '@/lib/configUtils';
 
 interface UseSimulationControlReturn {
   isRunning: boolean;
   isSaving: boolean;
-  handleRun: (configuration: DebateConfiguration) => Promise<void>;
-  handleSave: (configuration: DebateConfiguration) => Promise<void>;
+  handleRun: (configuration: EditorConfig) => Promise<void>;
+  handleSave: (configuration: EditorConfig, nodes: Node[]) => Promise<void>;
   canSave: (hasAgents: boolean) => boolean;
 }
 
@@ -18,7 +19,7 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleRun = useCallback(async (configuration: DebateConfiguration) => {
+  const handleRun = useCallback(async (configuration: EditorConfig) => {
     console.log('Running simulation...');
     setIsRunning(true);
 
@@ -70,9 +71,9 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
     } finally {
       setIsRunning(false);
     }
-  }, [router]);
+  }, [router, configId]);
 
-  const handleSave = useCallback(async (configuration: DebateConfiguration) => {
+  const handleSave = useCallback(async (configuration: EditorConfig, nodes: Node[]) => {
     if (!configId) {
       console.error('Cannot save: No config ID provided');
       return;
@@ -83,19 +84,24 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
 
     try {
       const enabledAgents = configuration.agents.filter(a => a.enabled);
+
+      // Log agents being saved
+      console.log('Agents to be saved:', enabledAgents);
       
-      // Build update request
+      
+      // Build update request with canvas positions using utility function
       const updateRequest = {
         topic: configuration.topic,
-        agents: enabledAgents.map(a => ({
-          name: a.name,
-          profile: a.personality,
-          model_id: a.model_id || undefined
-        })),
+        name: configuration.name,
+        description: configuration.description,
+        agents: agentsToConfigUpdate(enabledAgents, nodes),
         max_iters: configuration.maxIterations,
         bias: enabledAgents.map(a => a.bias || 0),
         stance: "neutral" // Could be configurable in the future
       };
+
+      // Log agentsToConfigUpdate result
+      console.log('agentsToConfigUpdate result:', updateRequest.agents);
 
       await debateApi.updateConfig(configId, updateRequest);
       console.log('Configuration saved successfully');

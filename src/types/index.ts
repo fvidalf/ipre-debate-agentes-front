@@ -7,7 +7,7 @@ export type Node = {
   type: 'center' | 'peer';
 };
 
-export type SidebarOption = 'people' | 'tools' | 'settings';
+export type SidebarOption = 'back' | 'people' | 'tools' | 'settings';
 
 export type Tool = {
   id: string;
@@ -28,7 +28,9 @@ export type Agent = {
   model_id?: string; // AI model selection for this agent
 };
 
-export type DebateConfiguration = {
+export type EditorConfig = {
+  name: string;
+  description: string;
   topic: string;
   maxIterations: number;
   agents: Agent[];

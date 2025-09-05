@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { debateApi, Config, ConfigRun } from '@/lib/api';
 
-interface UseDebateConfigsReturn {
+interface UseConfigsReturn {
   configs: Config[];
   loading: boolean;
   error: string | null;
@@ -16,7 +16,7 @@ interface UseDebateConfigsReturn {
   refreshConfigs: () => Promise<void>;
 }
 
-export function useDebateConfigs(): UseDebateConfigsReturn {
+export function useConfigs(): UseConfigsReturn {
   const [configs, setConfigs] = useState<Config[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
