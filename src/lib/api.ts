@@ -55,6 +55,10 @@ export interface SimulationProgress {
 
 export interface SimulationStatusResponse {
   simulation_id: string;
+  config_id?: string;
+  config_name?: string;
+  config_version_when_run?: number;
+  is_latest_version?: boolean;
   status: "created" | "running" | "finished" | "failed" | "stopped";
   progress: SimulationProgress;
   latest_events: DebateEvent[];

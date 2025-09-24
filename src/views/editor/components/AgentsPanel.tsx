@@ -104,7 +104,7 @@ export default function AgentsPanel({
               {agents.map((agent) => (
                 <div
                   key={agent.id}
-                  className="p-3 border border-neutral-200 rounded-xl bg-white hover:bg-neutral-50 hover:shadow-sm transition-all cursor-pointer"
+                  className="p-3 border border-neutral-200 rounded-xl bg-white hover:bg-[#f3f3f3] hover:shadow-sm transition-all cursor-pointer"
                   onClick={() => onAgentSelect?.(agent.id)}
                 >
                   <div className="flex items-center gap-3">
