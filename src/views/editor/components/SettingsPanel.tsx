@@ -282,10 +282,10 @@ function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate,
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-neutral-800">Data</h3>
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50">
+          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-[#f3f3f3]">
             Export Config
           </button>
-          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50">
+          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-[#f3f3f3]">
             Import Config
           </button>
         </div>

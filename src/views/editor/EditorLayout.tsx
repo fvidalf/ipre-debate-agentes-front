@@ -3,11 +3,11 @@
 import { Sidebar, Canvas, ToolsPanel, AgentsPanel, SettingsPanel } from './components';
 import { useDebateApp } from '@/hooks/useDebateApp';
 
-interface DebateAppLayoutProps {
+interface EditorLayoutProps {
   configId?: string;
 }
 
-export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
+export default function EditorLayout({ configId }: EditorLayoutProps) {
   const {
     activeOption,
     setActiveOption,
@@ -47,7 +47,7 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
   // Show loading state when loading config
   if (configLoading) {
     return (
-      <div className="h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="h-screen bg-[#f3f3f3] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-600">Loading debate configuration...</p>
@@ -59,7 +59,7 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
   // Show error state when config loading fails
   if (configLoadError) {
     return (
-      <div className="h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="h-screen bg-[#f3f3f3] flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h3 className="text-red-800 font-medium mb-2">Failed to load debate configuration</h3>
@@ -139,7 +139,7 @@ export default function DebateAppLayout({ configId }: DebateAppLayoutProps) {
   };
 
   return (
-    <div className="grid grid-cols-[64px_320px_1fr] h-screen bg-neutral-50 text-neutral-900 font-sans">
+    <div className="grid grid-cols-[64px_320px_1fr] h-screen bg-[#f3f3f3] text-neutral-900 font-sans">
       {/* Left Sidebar */}
       <Sidebar
         activeOption={activeOption}

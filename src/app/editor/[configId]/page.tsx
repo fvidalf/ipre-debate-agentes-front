@@ -1,4 +1,4 @@
-import { DebateAppLayout } from '@/views/debate';
+import { EditorLayout } from '@/views/editor';
 
 interface EditorConfigPageProps {
   params: Promise<{
@@ -8,5 +8,5 @@ interface EditorConfigPageProps {
 
 export default async function EditorConfigPage({ params }: EditorConfigPageProps) {
   const { configId } = await params;
-  return <DebateAppLayout key={configId} configId={configId} />;
+  return <EditorLayout key={configId} configId={configId} />;
 }

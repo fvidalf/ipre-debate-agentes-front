@@ -7,7 +7,7 @@ const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-neutral-200 bg-neutral-50 hover:bg-white hover:shadow-md text-neutral-600 hover:text-neutral-900",
+        default: "border-neutral-200 bg-[#f3f3f3] hover:bg-white hover:shadow-md text-neutral-600 hover:text-neutral-900",
         active: "border-primary-300 bg-primary-50 shadow-md text-primary-700",
         ghost: "border-transparent bg-transparent hover:bg-neutral-100 text-neutral-600 hover:text-neutral-900",
       },

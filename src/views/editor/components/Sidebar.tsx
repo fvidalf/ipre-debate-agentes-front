@@ -28,7 +28,7 @@ export default function Sidebar({ activeOption, onOptionChange }: SidebarProps) 
   };
 
   return (
-    <aside className="bg-neutral-50 flex flex-col items-center py-4 gap-6">
+    <aside className="bg-[#f3f3f3] flex flex-col items-center py-4 gap-6">
       {sidebarItems.map((item) => {
         const IconComponent = item.icon;
         return (

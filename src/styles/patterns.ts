@@ -59,7 +59,7 @@ export const styleGuide = {
   panels: {
     sidebar: "bg-white border-r border-neutral-200",
     panel: "bg-white border border-neutral-200 rounded-xl",
-    canvas: "bg-neutral-50 flex-1",
+    canvas: "bg-[#f3f3f3] flex-1",
   },
 
   // Canvas node styling patterns

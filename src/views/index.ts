@@ -1,3 +1,3 @@
 export * from './landing';
-export * from './debate';
+export * from './editor';
 export * from './my-debates';

@@ -9,7 +9,7 @@ interface ViewLayoutProps {
 export function ViewLayout({ children, className, background = 'default' }: ViewLayoutProps) {
   const backgrounds = {
     default: 'bg-white',
-    neutral: 'bg-neutral-50',
+    neutral: 'bg-[#f3f3f3]',
     gradient: 'bg-gradient-to-br from-neutral-50 via-white to-primary-50',
   };
 

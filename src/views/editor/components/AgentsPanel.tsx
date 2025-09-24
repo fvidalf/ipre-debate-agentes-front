@@ -65,7 +65,7 @@ export default function AgentsPanel({
                 <button
                   key={template.id}
                   onClick={() => onSelectPrebuiltAgent?.(template.id)}
-                  className="w-full p-3 border border-neutral-200 rounded-xl bg-white hover:bg-neutral-50 hover:shadow-sm transition-all text-left"
+                  className="w-full p-3 border border-neutral-200 rounded-xl bg-white hover:bg-[#f3f3f3] hover:shadow-sm transition-all text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div 

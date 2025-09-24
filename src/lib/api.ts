@@ -312,6 +312,14 @@ class DebateApiService {
     const endpoint = `/configs/${configId}/runs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.makeRequest<ConfigRunsResponse>(endpoint);
   }
+
+  async getConfigSnapshot(configId: string, versionNumber: number): Promise<Config> {
+    console.log('🔍 DebateApiService.getConfigSnapshot - Fetching snapshot:', { configId, versionNumber });
+    const result = await this.makeRequest<Config>(`/config-snapshots/${configId}/versions/${versionNumber}`);
+    console.log('📸 DebateApiService.getConfigSnapshot - Raw response:', result);
+    console.log('👥 DebateApiService.getConfigSnapshot - Agents in response:', result.agents);
+    return result;
+  }
 }
 
 export const debateApi = new DebateApiService();
