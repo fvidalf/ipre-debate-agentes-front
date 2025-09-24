@@ -54,23 +54,19 @@ export function useConfigs(): UseConfigsReturn {
 
   const toggleConfig = useCallback((configId: string) => {
     setExpandedConfigs(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(configId)) {
-        newSet.delete(configId);
-        // If we're collapsing the selected config, clear selection
-        if (selectedConfigId === configId) {
-          setSelectedConfigId(null);
-          setSelectedConfigRuns([]);
-        }
+      if (prev.has(configId)) {
+        // Collapsing the current config
+        setSelectedConfigId(null);
+        setSelectedConfigRuns([]);
+        return new Set(); // Close all expanded configs
       } else {
-        newSet.add(configId);
-        // When expanding, also select this config and fetch its runs
+        // Expanding a new config - close all others and open this one
         setSelectedConfigId(configId);
         fetchConfigRuns(configId);
+        return new Set([configId]); // Only this config is expanded
       }
-      return newSet;
     });
-  }, [selectedConfigId, fetchConfigRuns]);
+  }, [fetchConfigRuns]);
 
   const selectConfig = useCallback((configId: string | null) => {
     setSelectedConfigId(configId);
