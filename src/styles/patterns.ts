@@ -71,10 +71,35 @@ export const styleGuide = {
       normal: "border border-black/5",
       selected: "border-4 border-purple-600 ring-2 ring-purple-600 ring-opacity-30",
     },
-    // Node sizes
+    // Node sizes by variant
     size: {
-      center: "w-24 h-24",
-      peer: "w-20 h-20",
+      small: {
+        center: "w-8 h-8",
+        peer: "w-8 h-8",
+        inner: { center: "w-7 h-7", peer: "w-7 h-7" }, // Inner node smaller than container
+        icon: "w-3 h-3",
+      },
+      medium: {
+        center: "w-14 h-14",
+        peer: "w-14 h-14", 
+        inner: { center: "w-12 h-12", peer: "w-12 h-12" }, // Inner node smaller than container
+        icon: "w-6 h-6",
+      },
+      large: {
+        center: "w-20 h-20",
+        peer: "w-20 h-20",
+        inner: { center: "w-16 h-16", peer: "w-16 h-16" }, // Inner node smaller than container
+        icon: "w-8 h-8",
+      },
+    },
+    // Mini variant styles (uses same sizing system but different visual approach)
+    mini: {
+      base: "absolute transform -translate-x-1/2 -translate-y-1/2",
+      inner: "w-full h-full rounded-lg bg-white border-2 flex items-center justify-center shadow-sm",
+    },
+    // Inner node styling for editor/simulation variants
+    inner: {
+      base: "rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-inner",
     },
     // Node states
     state: {
@@ -107,13 +132,49 @@ export function combineStyles(...styles: string[]): string {
 // Specialized utility for node styling
 export function getNodeStyles(
   type: 'center' | 'peer',
-  state: { isSelected: boolean; isDragging: boolean }
+  state: { isSelected: boolean; isDragging: boolean },
+  nodeSize: 'small' | 'medium' | 'large' = 'medium'
 ): string {
   const base = styleGuide.nodes.base;
-  const size = type === 'center' ? styleGuide.nodes.size.center : styleGuide.nodes.size.peer;
+  const size = type === 'center' 
+    ? styleGuide.nodes.size[nodeSize].center 
+    : styleGuide.nodes.size[nodeSize].peer;
   const border = state.isSelected ? styleGuide.nodes.border.selected : styleGuide.nodes.border.normal;
   const stateStyle = state.isDragging ? styleGuide.nodes.state.dragging : styleGuide.nodes.state.normal;
   const effects = type === 'center' ? styleGuide.nodes.effects.center : styleGuide.nodes.effects.peer;
   
   return combineStyles(base, size, border, stateStyle, effects);
+}
+
+// Utility to get node size information for a specific variant
+export function getNodeSizeInfo(nodeSize: 'small' | 'medium' | 'large' = 'medium') {
+  return styleGuide.nodes.size[nodeSize];
+}
+
+// Utility to get inner node size for a specific node type and size variant
+export function getInnerNodeSize(
+  type: 'center' | 'peer', 
+  nodeSize: 'small' | 'medium' | 'large' = 'medium'
+): string {
+  return styleGuide.nodes.size[nodeSize].inner[type];
+}
+
+// Utility to get mini variant styles (now uses unified sizing system)
+export function getMiniNodeStyles(
+  type: 'center' | 'peer', 
+  nodeSize: 'small' | 'medium' | 'large' = 'medium'
+): {
+  container: string;
+  inner: string;
+  iconSize: string;
+} {
+  const sizeClass = type === 'center' 
+    ? styleGuide.nodes.size[nodeSize].center 
+    : styleGuide.nodes.size[nodeSize].peer;
+  
+  return {
+    container: combineStyles(styleGuide.nodes.mini.base, sizeClass),
+    inner: styleGuide.nodes.mini.inner,
+    iconSize: styleGuide.nodes.size[nodeSize].icon,
+  };
 }
