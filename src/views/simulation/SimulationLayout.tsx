@@ -99,6 +99,7 @@ export default function SimulationLayout({
       {/* Middle Panel - Debate Events */}
       <div className="hidden md:flex md:flex-col md:min-h-0 md:overflow-hidden">
         <DebateEventsPanel
+          config={configSnapshot}
           simulationId={simulationId}
           simulationStatus={simulationStatus}
           voteResults={voteResults}
@@ -109,16 +110,14 @@ export default function SimulationLayout({
 
       {/* Right Panel - Canvas and Status */}
       <div className="flex flex-col min-h-0 overflow-hidden">
-        {/* Top - Canvas (70% height) */}
-        <div className="flex-[7] min-h-0 overflow-hidden">
+        <div className="flex-[7] m-4 mb-2 min-h-0 overflow-hidden">
           <SimulationCanvas
             config={configSnapshot}
             configLoading={configLoading}
           />
         </div>
         
-        {/* Bottom - Status (30% height) */}
-        <div className="flex-[3] min-h-0 overflow-hidden">
+        <div className="flex-[3] m-4 mt-2 min-h-0 overflow-hidden">
           <SimulationStatus
             simulationStatus={simulationStatus}
             error={error}
