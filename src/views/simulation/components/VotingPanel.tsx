@@ -7,6 +7,7 @@ interface VotingPanelProps {
     simulationId: string;
     simulationStatus: any;
     voteResults: VoteResponse | null;
+    voteLoading: boolean;
     voteError: string | null;
     onVoteSimulation: () => void;
 }
@@ -16,6 +17,7 @@ export default function VotingPanel({
     simulationId,
     simulationStatus,
     voteResults,
+    voteLoading,
     voteError,
     onVoteSimulation,
 }: VotingPanelProps) {
@@ -50,8 +52,16 @@ export default function VotingPanel({
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
                 <div className="p-6">
+                    {/* Loading State */}
+                    {voteLoading && (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
+                            <span className="ml-2 text-sm text-neutral-500">Loading votes...</span>
+                        </div>
+                    )}
+
                     {/* Vote Results */}
-                    {voteResults && voteResults.individual_votes && voteResults.individual_votes.length > 0 ? (
+                    {!voteLoading && voteResults && voteResults.individual_votes && voteResults.individual_votes.length > 0 ? (
                         <div className="space-y-6">
                             {/* Vote Summary */}
                             <div className="bg-white border border-neutral-200 rounded-xl p-4">
@@ -91,13 +101,13 @@ export default function VotingPanel({
                             ))}
                             </div>
                         </div>
-                    ) : voteResults !== null ? (
+                    ) : !voteLoading && voteResults !== null ? (
                         <div className="text-center py-8">
                             <div className="flex items-center justify-center gap-2 text-neutral-600">
                                 <span>No votes recorded</span>
                             </div>
                         </div>
-                    ) : (
+                    ) : !voteLoading ? (
                         <div className="text-center py-8">
                             <div className="flex flex-col items-center gap-4 text-neutral-600">
                                 <span>{voteError ? 'Voting failed - try again' : 'Ready to collect agent votes'}</span>
@@ -109,7 +119,7 @@ export default function VotingPanel({
                                 </button>
                             </div>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

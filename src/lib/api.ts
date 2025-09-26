@@ -218,6 +218,12 @@ export interface UpdateConfigRequest {
   embedding_model?: string;
 }
 
+export interface DeleteConfigResponse {
+  message: string;
+  deleted_config_name: string;
+  deleted_runs_count: number;
+}
+
 class DebateApiService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -262,6 +268,10 @@ class DebateApiService {
     return this.makeRequest<VoteResponse>(`/simulations/${simId}/vote`, {
       method: 'POST',
     });
+  }
+
+  async getSimulationVotes(simId: string): Promise<VoteResponse> {
+    return this.makeRequest<VoteResponse>(`/simulations/${simId}/votes`);
   }
 
   async healthCheck(): Promise<{ ok: boolean }> {
@@ -331,6 +341,12 @@ class DebateApiService {
     console.log('📸 DebateApiService.getConfigVersion - Raw response:', result);
     console.log('👥 DebateApiService.getConfigVersion - Agents in response:', result.agents);
     return result;
+  }
+
+  async deleteConfig(configId: string): Promise<DeleteConfigResponse> {
+    return this.makeRequest<DeleteConfigResponse>(`/configs/${configId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

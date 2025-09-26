@@ -41,6 +41,23 @@ export default function MyDebatesView() {
     }
   };
 
+  const handleDeleteConfig = async (configId: string, configName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${configName}"?\n\nThis will permanently delete the debate configuration and ALL associated simulation runs. This action cannot be undone.`
+    );
+    
+    if (confirmed) {
+      try {
+        await debateApi.deleteConfig(configId);
+        // Refresh the configs list to remove the deleted config
+        await refreshConfigs();
+      } catch (error) {
+        console.error('Failed to delete config:', error);
+        alert('Failed to delete the debate configuration. Please try again.');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f3f3f3]">
@@ -160,6 +177,7 @@ export default function MyDebatesView() {
                 runsLoading={selectedConfigId === config.id && runsLoading}
                 isExpanded={expandedConfigs.has(config.id)}
                 onToggle={() => toggleConfig(config.id)}
+                onDelete={handleDeleteConfig}
               />
             ))}
           </div>

@@ -14,6 +14,7 @@ interface SimulationLayoutProps {
   configSnapshot: any;
   configLoading: boolean;
   voteResults: any;
+  voteLoading: boolean;
   voteError: string | null;
   error: string | null;
   hasPollingError: boolean;
@@ -28,6 +29,7 @@ export default function SimulationLayout({
   configSnapshot,
   configLoading,
   voteResults,
+  voteLoading,
   voteError,
   error,
   hasPollingError,
@@ -117,6 +119,7 @@ export default function SimulationLayout({
             simulationId={simulationId}
             simulationStatus={simulationStatus}
             voteResults={voteResults}
+            voteLoading={voteLoading}
             voteError={voteError}
             onVoteSimulation={onVoteSimulation}
           />

@@ -16,6 +16,7 @@ interface DebateItemProps {
   runsLoading: boolean;
   isExpanded: boolean;
   onToggle: () => void;
+  onDelete: (configId: string, configName: string) => Promise<void>;
 }
 
 export default function DebateItem({ 
@@ -24,7 +25,8 @@ export default function DebateItem({
   runs, 
   runsLoading, 
   isExpanded, 
-  onToggle 
+  onToggle,
+  onDelete 
 }: DebateItemProps) {
   const router = useRouter();
   const [fullConfig, setFullConfig] = useState<Config | null>(null);
@@ -111,6 +113,7 @@ export default function DebateItem({
         isExpanded={isExpanded}
         onToggle={onToggle}
         onOpenEditor={handleOpenInEditor}
+        onDelete={() => onDelete(configId, displayConfig.name)}
       />
 
       {/* Expanded Content */}

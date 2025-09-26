@@ -72,7 +72,7 @@ export default function RunsList({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-medium text-gray-900">
-                Run {run.simulation_id.slice(-8)}
+                Run {run.simulation_id}
               </span>
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(run.status)}`}>
                 {run.status}

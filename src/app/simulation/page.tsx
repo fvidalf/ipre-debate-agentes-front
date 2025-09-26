@@ -10,6 +10,7 @@ function SimulationPageContent() {
   const simulationId = searchParams?.get('id');
   const [simulationStatus, setSimulationStatus] = useState<SimulationStatusResponse | null>(null);
   const [voteResults, setVoteResults] = useState<VoteResponse | null>(null);
+  const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [configSnapshot, setConfigSnapshot] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
@@ -90,11 +91,32 @@ function SimulationPageContent() {
     }
   };
 
+  // Fetch existing votes (without triggering)
+  const fetchExistingVotes = useCallback(async (id: string) => {
+    try {
+      setVoteLoading(true);
+      setVoteError(null);
+      const voteResponse = await debateApi.getSimulationVotes(id);
+      setVoteResults(voteResponse);
+      console.log('Existing votes fetched:', voteResponse);
+    } catch (err) {
+      // Don't set error for 404 - just means no votes exist yet
+      if (err instanceof Error && !err.message.includes('404')) {
+        console.error('Failed to fetch existing votes:', err);
+        const errorMessage = 'Failed to load existing votes';
+        setVoteError(errorMessage);
+      }
+    } finally {
+      setVoteLoading(false);
+    }
+  }, []);
+
   // Vote simulation
   const handleVoteSimulation = async () => {
     if (!simulationId) return;
     
     try {
+      setVoteLoading(true);
       setVoteError(null); // Clear any previous errors
       const voteResponse = await debateApi.voteSimulation(simulationId);
       setVoteResults(voteResponse);
@@ -103,6 +125,8 @@ function SimulationPageContent() {
       console.error('Failed to trigger voting:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to start voting';
       setVoteError(errorMessage);
+    } finally {
+      setVoteLoading(false);
     }
   };
 
@@ -118,6 +142,11 @@ function SimulationPageContent() {
         if (status && !status.is_finished) {
           startPolling(simulationId);
         }
+        
+        // Fetch existing votes if simulation is finished
+        if (status && status.is_finished) {
+          fetchExistingVotes(simulationId);
+        }
       });
     } else {
       setInitialLoading(false);
@@ -130,7 +159,7 @@ function SimulationPageContent() {
         clearInterval(pollingInterval);
       }
     };
-  }, [simulationId]); // Only depend on simulationId
+  }, [simulationId, fetchExistingVotes]); // Add fetchExistingVotes dependency
 
   // Show error screen only if there's an error and no simulation data
   if (error && !simulationStatus) {
@@ -191,6 +220,7 @@ function SimulationPageContent() {
       configSnapshot={configSnapshot}
       configLoading={configLoading}
       voteResults={voteResults}
+      voteLoading={voteLoading}
       voteError={voteError}
       error={error}
       hasPollingError={hasPollingError}
