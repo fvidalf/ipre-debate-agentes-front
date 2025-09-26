@@ -5,7 +5,6 @@ interface DebateEventsPanelProps {
   config?: Config;
   simulationId: string;
   simulationStatus: any;
-  voteResults: any;
   error: string | null;
   hasPollingError: boolean;
 }
@@ -14,7 +13,6 @@ export default function DebateEventsPanel({
   config,
   simulationId,
   simulationStatus,
-  voteResults,
   error,
   hasPollingError,
 }: DebateEventsPanelProps) {
@@ -97,32 +95,6 @@ export default function DebateEventsPanel({
                 </div>
                 <div className="h-4 bg-neutral-300 rounded w-full mb-2"></div>
                 <div className="h-4 bg-neutral-300 rounded w-2/3"></div>
-              </div>
-            </div>
-          )}
-
-          {/* Vote Results */}
-          {voteResults && (
-            <div className="mt-6 p-4 bg-white border border-neutral-200 rounded-xl">
-              <h3 className="text-lg font-medium text-neutral-900 mb-4">Final Vote Results</h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center p-3 bg-green-50 rounded-xl border border-green-200">
-                  <div className="text-xl font-bold text-green-600">{voteResults.yea}</div>
-                  <div className="text-sm text-green-800">Yes Votes</div>
-                </div>
-                <div className="text-center p-3 bg-red-50 rounded-xl border border-red-200">
-                  <div className="text-xl font-bold text-red-600">{voteResults.nay}</div>
-                  <div className="text-sm text-red-800">No Votes</div>
-                </div>
-              </div>
-              
-              <h4 className="font-medium text-neutral-900 mb-2">Agent Reasoning:</h4>
-              <div className="space-y-2">
-                {voteResults.reasons.map((reason: string, index: number) => (
-                  <div key={index} className="bg-[#f3f3f3] rounded-xl p-3 text-sm border border-neutral-200">
-                    {reason}
-                  </div>
-                ))}
               </div>
             </div>
           )}

@@ -1,21 +1,26 @@
 'use client';
 
 import { SimulationSidebarOption } from '@/types';
-import { Play, ArrowLeft } from 'lucide-react';
+import { Play, ArrowLeft, Vote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface SimulationSidebarProps {
   activeOption: SimulationSidebarOption;
   onOptionChange: (option: SimulationSidebarOption) => void;
+  simulationStatus: any;
 }
 
-const sidebarItems = [
-  { id: 'back' as const, icon: ArrowLeft, title: 'Back to My Debates' },
-  { id: 'simulation' as const, icon: Play, title: 'Simulation' },
-];
-
-export default function SimulationSidebar({ activeOption, onOptionChange }: SimulationSidebarProps) {
+export default function SimulationSidebar({ activeOption, onOptionChange, simulationStatus }: SimulationSidebarProps) {
   const router = useRouter();
+
+  // Only show voting option when simulation is finished or stopped
+  const isSimulationComplete = simulationStatus?.status === 'finished' || simulationStatus?.status === 'stopped';
+  
+  const sidebarItems = [
+    { id: 'back' as const, icon: ArrowLeft, title: 'Back to My Debates' },
+    { id: 'simulation' as const, icon: Play, title: 'Simulation' },
+    ...(isSimulationComplete ? [{ id: 'voting' as const, icon: Vote, title: 'Voting' }] : []),
+  ];
 
   const handleOptionClick = (option: SimulationSidebarOption) => {
     if (option === 'back') {

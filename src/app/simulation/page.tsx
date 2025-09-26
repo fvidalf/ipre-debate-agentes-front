@@ -10,6 +10,7 @@ function SimulationPageContent() {
   const simulationId = searchParams?.get('id');
   const [simulationStatus, setSimulationStatus] = useState<SimulationStatusResponse | null>(null);
   const [voteResults, setVoteResults] = useState<VoteResponse | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
   const [configSnapshot, setConfigSnapshot] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -21,7 +22,7 @@ function SimulationPageContent() {
   const fetchConfigSnapshot = useCallback(async (configId: string, versionNumber: number) => {
     try {
       setConfigLoading(true);
-      const snapshot = await debateApi.getConfigSnapshot(configId, versionNumber);
+      const snapshot = await debateApi.getConfigVersion(configId, versionNumber);
       setConfigSnapshot(snapshot);
     } catch (err) {
       console.error('Failed to fetch config snapshot:', err);
@@ -35,6 +36,7 @@ function SimulationPageContent() {
   const pollSimulationStatus = useCallback(async (id: string) => {
     try {
       const status = await debateApi.getSimulationStatus(id);
+      console.log('Polled simulation status:', status);
       setSimulationStatus(status);
       setError(null); // Clear any previous errors
       setHasPollingError(false);
@@ -42,17 +44,6 @@ function SimulationPageContent() {
       // Fetch config snapshot if available and not already loaded
       if (status.config_id && status.config_version_when_run && !configSnapshot && !configLoading) {
         fetchConfigSnapshot(status.config_id, status.config_version_when_run);
-      }
-      
-      // If simulation finished, get vote results
-      if (status.is_finished && status.status === 'finished' && !voteResults) {
-        try {
-          const votes = await debateApi.voteSimulation(id);
-          setVoteResults(votes);
-        } catch (voteError) {
-          console.error('Failed to get votes:', voteError);
-          // Don't set error state for vote failures
-        }
       }
       
       return status;
@@ -64,7 +55,7 @@ function SimulationPageContent() {
       // Return null to indicate error and stop polling
       return null;
     }
-  }, [configSnapshot, configLoading, fetchConfigSnapshot, voteResults]); // Add dependencies
+  }, [configSnapshot, configLoading, fetchConfigSnapshot]); // Add dependencies
 
   // Start polling
   const startPolling = useCallback((id: string) => {
@@ -96,6 +87,22 @@ function SimulationPageContent() {
       // Polling will detect the stop and update the status
     } catch (err) {
       console.error('Failed to stop simulation:', err);
+    }
+  };
+
+  // Vote simulation
+  const handleVoteSimulation = async () => {
+    if (!simulationId) return;
+    
+    try {
+      setVoteError(null); // Clear any previous errors
+      const voteResponse = await debateApi.voteSimulation(simulationId);
+      setVoteResults(voteResponse);
+      console.log('Vote results:', voteResponse);
+    } catch (err) {
+      console.error('Failed to trigger voting:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start voting';
+      setVoteError(errorMessage);
     }
   };
 
@@ -135,10 +142,10 @@ function SimulationPageContent() {
           </h1>
           <p className="text-gray-800 mb-4">{error}</p>
           <button
-            onClick={() => window.location.href = '/debate'}
+            onClick={() => window.location.href = '/'}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
-            Go Back to Debate Setup
+            Go Back to My Debates
           </button>
         </div>
       </div>
@@ -167,10 +174,10 @@ function SimulationPageContent() {
             No simulation data
           </h1>
           <button
-            onClick={() => window.location.href = '/debate'}
+            onClick={() => window.location.href = '/'}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
-            Go Back to Debate Setup
+            Go Back to My Debates
           </button>
         </div>
       </div>
@@ -184,10 +191,12 @@ function SimulationPageContent() {
       configSnapshot={configSnapshot}
       configLoading={configLoading}
       voteResults={voteResults}
+      voteError={voteError}
       error={error}
       hasPollingError={hasPollingError}
       initialLoading={initialLoading}
       onStopSimulation={handleStopSimulation}
+      onVoteSimulation={handleVoteSimulation}
     />
   );
 }

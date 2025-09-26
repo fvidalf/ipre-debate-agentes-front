@@ -9,7 +9,7 @@ export type Node = {
 
 export type SidebarOption = 'back' | 'people' | 'tools' | 'settings';
 
-export type SimulationSidebarOption = 'back' | 'simulation';
+export type SimulationSidebarOption = 'back' | 'simulation' | 'voting';
 
 export type Tool = {
   id: string;

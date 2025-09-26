@@ -69,7 +69,7 @@ export function useConfigWithSnapshot(
       setSnapshotError(null);
       console.log('🔍 useConfigWithSnapshot - Fetching snapshot for run:', { runId, configId, versionNumber });
       
-      const snapshot = await debateApi.getConfigSnapshot(configId, versionNumber);
+      const snapshot = await debateApi.getConfigVersion(configId, versionNumber);
       console.log('✅ useConfigWithSnapshot - Loaded snapshot:', snapshot);
       setSnapshotConfig(snapshot);
     } catch (error) {

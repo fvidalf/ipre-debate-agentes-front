@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SimulationSidebarOption } from '@/types';
 import SimulationSidebar from './components/SimulationSidebar';
 import DebateEventsPanel from './components/DebateEventsPanel';
+import VotingPanel from './components/VotingPanel';
 import SimulationCanvas from './components/SimulationCanvas';
 import SimulationStatus from './components/SimulationStatus';
 
@@ -13,10 +14,12 @@ interface SimulationLayoutProps {
   configSnapshot: any;
   configLoading: boolean;
   voteResults: any;
+  voteError: string | null;
   error: string | null;
   hasPollingError: boolean;
   initialLoading: boolean;
   onStopSimulation: () => void;
+  onVoteSimulation: () => void;
 }
 
 export default function SimulationLayout({
@@ -25,12 +28,23 @@ export default function SimulationLayout({
   configSnapshot,
   configLoading,
   voteResults,
+  voteError,
   error,
   hasPollingError,
   initialLoading,
   onStopSimulation,
+  onVoteSimulation,
 }: SimulationLayoutProps) {
   const [activeOption, setActiveOption] = useState<SimulationSidebarOption>('simulation');
+
+  // Auto-redirect to simulation if on other option but simulation isn't complete
+  useEffect(() => {
+    const isSimulationComplete = simulationStatus?.status === 'finished' || simulationStatus?.status === 'stopped';
+    
+    if (!isSimulationComplete && activeOption !== 'simulation') {
+      setActiveOption('simulation');
+    }
+  }, [simulationStatus?.status, activeOption]);
 
   // Show error screen only if there's an error and no simulation data
   if (error && !simulationStatus) {
@@ -84,6 +98,32 @@ export default function SimulationLayout({
     );
   }
 
+  const renderMiddlePanel = () => {
+    switch (activeOption) {
+      case 'simulation':
+        return (
+          <DebateEventsPanel
+            config={configSnapshot}
+            simulationId={simulationId}
+            simulationStatus={simulationStatus}
+            error={error}
+            hasPollingError={hasPollingError}
+          />
+        );
+      case 'voting':
+        return (
+          <VotingPanel
+            config={configSnapshot}
+            simulationId={simulationId}
+            simulationStatus={simulationStatus}
+            voteResults={voteResults}
+            voteError={voteError}
+            onVoteSimulation={onVoteSimulation}
+          />
+        );
+    }
+  };
+
   const handleSidebarOptionChange = (option: SimulationSidebarOption) => {
     setActiveOption(option);
   };
@@ -94,18 +134,12 @@ export default function SimulationLayout({
       <SimulationSidebar
         activeOption={activeOption}
         onOptionChange={handleSidebarOptionChange}
+        simulationStatus={simulationStatus}
       />
 
       {/* Middle Panel - Debate Events */}
       <div className="hidden md:flex md:flex-col md:min-h-0 md:overflow-hidden">
-        <DebateEventsPanel
-          config={configSnapshot}
-          simulationId={simulationId}
-          simulationStatus={simulationStatus}
-          voteResults={voteResults}
-          error={error}
-          hasPollingError={hasPollingError}
-        />
+        {renderMiddlePanel()}
       </div>
 
       {/* Right Panel - Canvas and Status */}

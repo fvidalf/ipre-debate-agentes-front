@@ -69,11 +69,19 @@ export interface SimulationStatusResponse {
   created_at: string;
 }
 
+export interface IndividualVote {
+  agent_name: string;
+  agent_background: string;
+  vote: boolean;
+  reasoning: string;
+}
+
 export interface VoteResponse {
   simulation_id: string;
   yea: number;
   nay: number;
-  reasons: string[];
+  individual_votes: IndividualVote[];
+  created_at: string;
 }
 
 export interface StopResponse {
@@ -317,11 +325,11 @@ class DebateApiService {
     return this.makeRequest<ConfigRunsResponse>(endpoint);
   }
 
-  async getConfigSnapshot(configId: string, versionNumber: number): Promise<Config> {
-    console.log('🔍 DebateApiService.getConfigSnapshot - Fetching snapshot:', { configId, versionNumber });
-    const result = await this.makeRequest<Config>(`/config-snapshots/${configId}/versions/${versionNumber}`);
-    console.log('📸 DebateApiService.getConfigSnapshot - Raw response:', result);
-    console.log('👥 DebateApiService.getConfigSnapshot - Agents in response:', result.agents);
+  async getConfigVersion(configId: string, versionNumber: number): Promise<Config> {
+    console.log('🔍 DebateApiService.getConfigVersion - Fetching version:', { configId, versionNumber });
+    const result = await this.makeRequest<Config>(`/config-versions/${configId}/versions/${versionNumber}`);
+    console.log('📸 DebateApiService.getConfigVersion - Raw response:', result);
+    console.log('👥 DebateApiService.getConfigVersion - Agents in response:', result.agents);
     return result;
   }
 }

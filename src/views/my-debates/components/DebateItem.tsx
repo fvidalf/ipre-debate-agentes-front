@@ -78,7 +78,7 @@ export default function DebateItem({
       setSnapshotError(null);
       console.log('🔍 DebateItem - Fetching snapshot for run:', { runId, configId, versionNumber });
       
-      const snapshot = await debateApi.getConfigSnapshot(configId, versionNumber);
+      const snapshot = await debateApi.getConfigVersion(configId, versionNumber);
       console.log('✅ DebateItem - Loaded snapshot:', snapshot);
       setSnapshotConfig(snapshot);
     } catch (error) {
