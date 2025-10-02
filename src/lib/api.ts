@@ -90,6 +90,26 @@ export interface StopResponse {
   message: string;
 }
 
+export enum AnalyticsType {
+  EngagementMatrixType = "engagement_matrix",
+  ParticipationStatsType = "participation_stats",
+  OpinionSimilarityType = "opinion_similarity",
+}
+
+export interface AnalyticsItem {
+  type: AnalyticsType;
+  title: string;
+  description: string;
+  data: any;
+  metadata: Record<string, any>;
+}
+
+export interface AnalyticsResponse {
+  run_id: string;
+  analytics: AnalyticsItem[];
+  computed_at: string;
+}
+
 // Agent Templates interfaces
 export interface AgentTemplate {
   id: string;
@@ -236,7 +256,9 @@ class DebateApiService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(errorData.detail || `HTTP ${response.status}`);
+      const error = new Error(errorData.detail || `HTTP ${response.status}`) as Error & { status: number };
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -272,6 +294,16 @@ class DebateApiService {
 
   async getSimulationVotes(simId: string): Promise<VoteResponse> {
     return this.makeRequest<VoteResponse>(`/simulations/${simId}/votes`);
+  }
+
+  async getSimulationAnalytics(simId: string): Promise<AnalyticsResponse> {
+    return this.makeRequest<AnalyticsResponse>(`/simulations/${simId}/analytics`);
+  }
+
+  async analyzeSimulation(simId: string): Promise<AnalyticsResponse> {
+    return this.makeRequest<AnalyticsResponse>(`/simulations/${simId}/analyze`, {
+      method: 'POST',
+    });
   }
 
   async healthCheck(): Promise<{ ok: boolean }> {

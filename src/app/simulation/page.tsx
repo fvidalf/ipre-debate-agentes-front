@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { debateApi, SimulationStatusResponse, VoteResponse } from '@/lib/api';
+import { debateApi, SimulationStatusResponse, VoteResponse, AnalyticsType } from '@/lib/api';
 import { SimulationLayout } from '@/views/simulation';
 
 function SimulationPageContent() {
@@ -12,12 +12,16 @@ function SimulationPageContent() {
   const [voteResults, setVoteResults] = useState<VoteResponse | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
+  const [analyticsResults, setAnalyticsResults] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [configSnapshot, setConfigSnapshot] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasPollingError, setHasPollingError] = useState(false);
+  const [selectedViz, setSelectedViz] = useState<AnalyticsType | null>(null);
 
   // Fetch config snapshot for the simulation
   const fetchConfigSnapshot = useCallback(async (configId: string, versionNumber: number) => {
@@ -91,7 +95,6 @@ function SimulationPageContent() {
     }
   };
 
-  // Fetch existing votes (without triggering)
   const fetchExistingVotes = useCallback(async (id: string) => {
     try {
       setVoteLoading(true);
@@ -99,15 +102,33 @@ function SimulationPageContent() {
       const voteResponse = await debateApi.getSimulationVotes(id);
       setVoteResults(voteResponse);
       console.log('Existing votes fetched:', voteResponse);
-    } catch (err) {
+    } catch (err: any) {
       // Don't set error for 404 - just means no votes exist yet
-      if (err instanceof Error && !err.message.includes('404')) {
+      if (err.status !== 404) {
         console.error('Failed to fetch existing votes:', err);
         const errorMessage = 'Failed to load existing votes';
         setVoteError(errorMessage);
       }
     } finally {
       setVoteLoading(false);
+    }
+  }, []);
+
+  const fetchExistingAnalytics = useCallback(async (id: string) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const analyticsResponse = await debateApi.getSimulationAnalytics(id);
+      setAnalyticsResults(analyticsResponse);
+      console.log('Existing analytics fetched:', analyticsResponse);
+    } catch (err: any) {
+      if (err.status !== 404) {
+        console.error('Failed to fetch existing analytics:', err);
+        const errorMessage = 'Failed to load existing analytics';
+        setAnalyticsError(errorMessage);
+      }
+    } finally {
+      setAnalyticsLoading(false);
     }
   }, []);
 
@@ -121,14 +142,44 @@ function SimulationPageContent() {
       const voteResponse = await debateApi.voteSimulation(simulationId);
       setVoteResults(voteResponse);
       console.log('Vote results:', voteResponse);
-    } catch (err) {
-      console.error('Failed to trigger voting:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to start voting';
-      setVoteError(errorMessage);
+    } catch (err: any) {
+      // Don't set error for 404 - just means no votes exist yet
+      if (err.status !== 404) {
+        console.error('Failed to trigger voting:', err);
+        const errorMessage = 'Failed to start voting';
+        setVoteError(errorMessage);
+      }
     } finally {
       setVoteLoading(false);
     }
   };
+
+  // Fetch analytics data
+  const handleAnalyzeSimulation = async () => {
+    if (!simulationId) return;
+
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const analyticsResponse = await debateApi.analyzeSimulation(simulationId);
+      setAnalyticsResults(analyticsResponse);
+      console.log('Analytics data fetched:', analyticsResponse);
+    } catch (err: any) {
+      // Don't set error for 404 - just means no analytics exist yet
+      if (err.status !== 404) {
+        console.error('Failed to fetch analytics data:', err);
+        const errorMessage = 'Failed to load analytics data';
+        setAnalyticsError(errorMessage);
+      }
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  // Log selected visualization
+  useEffect(() => {
+    console.log('Selected visualization:', selectedViz);
+  }, [selectedViz]);
 
   useEffect(() => {
     if (simulationId) {
@@ -146,6 +197,7 @@ function SimulationPageContent() {
         // Fetch existing votes if simulation is finished
         if (status && status.is_finished) {
           fetchExistingVotes(simulationId);
+          fetchExistingAnalytics(simulationId);
         }
       });
     } else {
@@ -222,11 +274,17 @@ function SimulationPageContent() {
       voteResults={voteResults}
       voteLoading={voteLoading}
       voteError={voteError}
+      analyticsResults={analyticsResults}
+      analyticsLoading={analyticsLoading}
+      analyticsError={analyticsError}
       error={error}
       hasPollingError={hasPollingError}
       initialLoading={initialLoading}
       onStopSimulation={handleStopSimulation}
       onVoteSimulation={handleVoteSimulation}
+      onAnalyzeSimulation={handleAnalyzeSimulation}
+      selectedViz={selectedViz}
+      setSelectedViz={setSelectedViz}
     />
   );
 }

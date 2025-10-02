@@ -1,7 +1,7 @@
 'use client';
 
 import { SimulationSidebarOption } from '@/types';
-import { Play, ArrowLeft, Vote } from 'lucide-react';
+import { Play, ArrowLeft, Vote, ChartArea } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface SimulationSidebarProps {
@@ -20,6 +20,7 @@ export default function SimulationSidebar({ activeOption, onOptionChange, simula
     { id: 'back' as const, icon: ArrowLeft, title: 'Back to My Debates' },
     { id: 'simulation' as const, icon: Play, title: 'Simulation' },
     ...(isSimulationComplete ? [{ id: 'voting' as const, icon: Vote, title: 'Voting' }] : []),
+    ...(isSimulationComplete ? [{ id: 'visuals' as const, icon: ChartArea, title: 'Visuals' }] : []),
   ];
 
   const handleOptionClick = (option: SimulationSidebarOption) => {

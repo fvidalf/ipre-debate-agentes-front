@@ -2,11 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { SimulationSidebarOption } from '@/types';
+import { AnalyticsType } from '@/lib/api';
 import SimulationSidebar from './components/SimulationSidebar';
 import DebateEventsPanel from './components/DebateEventsPanel';
 import VotingPanel from './components/VotingPanel';
+import AnalyticsPanel from './components/AnalyticsPanel';
 import SimulationCanvas from './components/SimulationCanvas';
 import SimulationStatus from './components/SimulationStatus';
+import VisualizationRenderer from './components/VisualizationRenderer';
+import { 
+  EngagementMatrix, 
+  ParticipationStats, 
+  OpinionSimilarity 
+} from './components/AnalyticsVisualization';
 
 interface SimulationLayoutProps {
   simulationId: string;
@@ -16,11 +24,17 @@ interface SimulationLayoutProps {
   voteResults: any;
   voteLoading: boolean;
   voteError: string | null;
+  analyticsResults: any;
+  analyticsLoading: boolean;
+  analyticsError: string | null;
   error: string | null;
   hasPollingError: boolean;
   initialLoading: boolean;
   onStopSimulation: () => void;
   onVoteSimulation: () => void;
+  onAnalyzeSimulation: () => void;
+  selectedViz: AnalyticsType | null;
+  setSelectedViz: (viz: AnalyticsType | null) => void;
 }
 
 export default function SimulationLayout({
@@ -31,11 +45,17 @@ export default function SimulationLayout({
   voteResults,
   voteLoading,
   voteError,
+  analyticsResults,
+  analyticsLoading,
+  analyticsError,
   error,
   hasPollingError,
   initialLoading,
   onStopSimulation,
   onVoteSimulation,
+  onAnalyzeSimulation,
+  selectedViz,
+  setSelectedViz
 }: SimulationLayoutProps) {
   const [activeOption, setActiveOption] = useState<SimulationSidebarOption>('simulation');
 
@@ -124,6 +144,53 @@ export default function SimulationLayout({
             onVoteSimulation={onVoteSimulation}
           />
         );
+      case 'visuals':
+        return (
+          <AnalyticsPanel
+            analyticsResults={analyticsResults}
+            analyticsLoading={analyticsLoading}
+            analyticsError={analyticsError}
+            onAnalyzeSimulation={onAnalyzeSimulation}
+            selectedViz={selectedViz}
+            setSelectedViz={setSelectedViz}
+          />
+        )
+    }
+  };
+
+  const renderRightPanel = () => {
+    switch (activeOption) {
+      // on everything except visuals, show the simulation canvas and status
+      case 'simulation':
+      case 'voting':
+        return (
+          <>
+            <div className="flex-[7] m-4 mb-2 min-h-0 overflow-hidden">
+              <SimulationCanvas
+                config={configSnapshot}
+                configLoading={configLoading}
+              />
+            </div>
+            
+            <div className="flex-[3] m-4 mt-2 min-h-0 overflow-hidden">
+              <SimulationStatus
+                simulationStatus={simulationStatus}
+                error={error}
+                hasPollingError={hasPollingError}
+                onStopSimulation={onStopSimulation}
+              />
+            </div>
+          </>
+        )
+      case 'visuals':
+        return (
+          <div className="m-4 min-h-0 overflow-hidden h-full">
+            <VisualizationRenderer
+              analytics={analyticsResults?.analytics || []}
+              selectedViz={selectedViz}
+            />
+          </div>
+        );
     }
   };
 
@@ -145,23 +212,8 @@ export default function SimulationLayout({
         {renderMiddlePanel()}
       </div>
 
-      {/* Right Panel - Canvas and Status */}
       <div className="flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-[7] m-4 mb-2 min-h-0 overflow-hidden">
-          <SimulationCanvas
-            config={configSnapshot}
-            configLoading={configLoading}
-          />
-        </div>
-        
-        <div className="flex-[3] m-4 mt-2 min-h-0 overflow-hidden">
-          <SimulationStatus
-            simulationStatus={simulationStatus}
-            error={error}
-            hasPollingError={hasPollingError}
-            onStopSimulation={onStopSimulation}
-          />
-        </div>
+        {renderRightPanel()}
       </div>
     </div>
   );

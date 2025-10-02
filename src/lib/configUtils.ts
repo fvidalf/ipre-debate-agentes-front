@@ -6,9 +6,9 @@ import { Node, Agent } from '@/types';
  * Handles both new configs with canvas_position and legacy configs
  */
 export function configToCanvasNodes(config: Config): Node[] {
-  console.log('🎨 configToCanvasNodes - Input config:', config);
-  console.log('👥 configToCanvasNodes - Config.agents:', config.agents);
-  console.log('🔢 configToCanvasNodes - Config.parameters.agent_count:', config.parameters.agent_count);
+  // console.log('🎨 dd Input config:', config);
+  // console.log('👥 dd Config.agents:', config.agents);
+  // console.log('🔢 dd Config.parameters.agent_count:', config.parameters.agent_count);
   
   const nodes: Node[] = [
     // Always include center node
@@ -16,27 +16,27 @@ export function configToCanvasNodes(config: Config): Node[] {
   ];
 
   if (config.agents && config.agents.length > 0) {
-    console.log('✅ configToCanvasNodes - Processing agents from config.agents:', config.agents.length);
+    // console.log('✅ dd Processing agents from config.agents:', config.agents.length);
     // Use actual agent data
     config.agents.forEach((configAgent, index) => {
-      console.log(`👤 configToCanvasNodes - Agent ${index}:`, configAgent);
+      // console.log(`👤 dd Agent ${index}:`, configAgent);
       
       let x: number, y: number;
       
       if (configAgent.canvas_position) {
-        console.log(`📍 configToCanvasNodes - Using stored position:`, configAgent.canvas_position);
+        // console.log(`📍 dd Using stored position:`, configAgent.canvas_position);
         // Use stored position
         x = configAgent.canvas_position.x;
         y = configAgent.canvas_position.y;
       } else {
-        console.log(`🔄 configToCanvasNodes - Using fallback circular positioning`);
+        // console.log(`🔄 dd Using fallback circular positioning`);
         // Fallback to circular positioning for legacy configs
         const radius = 25;
         const angleStep = (2 * Math.PI) / config.agents!.length;
         const angle = configAgent.position * angleStep;
         x = Math.max(10, Math.min(90, 50 + radius * Math.cos(angle)));
         y = Math.max(10, Math.min(90, 50 + radius * Math.sin(angle)));
-        console.log(`📐 configToCanvasNodes - Calculated position: x=${x}, y=${y}`);
+        // console.log(`📐 dd Calculated position: x=${x}, y=${y}`);
       }
       
       const node = {
@@ -48,11 +48,11 @@ export function configToCanvasNodes(config: Config): Node[] {
         name: configAgent.name
       };
       
-      console.log(`✨ configToCanvasNodes - Created node:`, node);
+      // console.log(`✨ dd Created node:`, node);
       nodes.push(node);
     });
   } else if (config.parameters.agent_count > 0) {
-    console.log('🔢 configToCanvasNodes - No agents array, using parameters.agent_count:', config.parameters.agent_count);
+    // console.log('🔢 dd No agents array, using parameters.agent_count:', config.parameters.agent_count);
     // Fallback: generate nodes from agent_count parameter
     const agentCount = config.parameters.agent_count;
     const radius = 25;
@@ -72,14 +72,14 @@ export function configToCanvasNodes(config: Config): Node[] {
         name: `Agent ${i + 1}`
       };
       
-      console.log(`🔄 configToCanvasNodes - Created fallback node ${i}:`, node);
+      // console.log(`🔄 dd Created fallback node ${i}:`, node);
       nodes.push(node);
     }
   } else {
-    console.log('❌ configToCanvasNodes - No agents found in config and agent_count is 0');
+    // console.log('❌ dd No agents found in config and agent_count is 0');
   }
 
-  console.log('🎯 configToCanvasNodes - Final nodes:', nodes);
+  // console.log('🎯 dd Final nodes:', nodes);
   return nodes;
 }
 
