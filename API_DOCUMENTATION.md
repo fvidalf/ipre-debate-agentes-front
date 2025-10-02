@@ -892,15 +892,22 @@ Computes analytics for a completed simulation. Analytics include engagement matr
       "type": "opinion_similarity",
       "title": "Opinion Similarity Matrix",
       "description": "Semantic similarity between agents' final opinions",
-      "data": [
-        [1.0, 0.23, 0.87],
-        [0.23, 1.0, 0.34],
-        [0.87, 0.34, 1.0]
-      ],
+      "data": {
+        "matrix": [
+          [1.0, 0.23],
+          [0.23, 1.0]
+        ],
+        "similarity_pairs": {
+          "Sarah Mitchell_vs_Sarah Mitchell": 1.0,
+          "Sarah Mitchell_vs_James Thompson": 0.23,
+          "James Thompson_vs_Sarah Mitchell": 0.23,
+          "James Thompson_vs_James Thompson": 1.0
+        }
+      },
       "metadata": {
-        "agent_names": ["Sarah Mitchell", "James Thompson", "Maria Lopez"],
+        "speaking_agents": ["Sarah Mitchell", "James Thompson"],
         "similarity_range": {"min": 0.0, "max": 1.0},
-        "note": "Higher values indicate more similar opinions"
+        "note": "Higher values indicate more similar opinions. Only agents who spoke are included."
       }
     }
   ]
@@ -994,15 +1001,22 @@ Checks if analytics exist for a simulation without triggering computation. Retur
       "type": "opinion_similarity",
       "title": "Opinion Similarity Matrix",
       "description": "Semantic similarity between agents' final opinions",
-      "data": [
-        [1.0, 0.23, 0.87],
-        [0.23, 1.0, 0.34],
-        [0.87, 0.34, 1.0]
-      ],
+      "data": {
+        "matrix": [
+          [1.0, 0.23],
+          [0.23, 1.0]
+        ],
+        "similarity_pairs": {
+          "Sarah Mitchell_vs_Sarah Mitchell": 1.0,
+          "Sarah Mitchell_vs_James Thompson": 0.23,
+          "James Thompson_vs_Sarah Mitchell": 0.23,
+          "James Thompson_vs_James Thompson": 1.0
+        }
+      },
       "metadata": {
-        "agent_names": ["Sarah Mitchell", "James Thompson", "Maria Lopez"],
+        "speaking_agents": ["Sarah Mitchell", "James Thompson"],
         "similarity_range": {"min": 0.0, "max": 1.0},
-        "note": "Higher values indicate more similar opinions"
+        "note": "Higher values indicate more similar opinions. Only agents who spoke are included."
       }
     }
   ]

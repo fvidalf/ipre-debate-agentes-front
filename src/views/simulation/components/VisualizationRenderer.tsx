@@ -312,25 +312,33 @@ const ParticipationStatsViz = ({ data, metadata }: { data: any, metadata: any })
   );
 };
 
-const OpinionSimilarityViz = ({ data, metadata }: { data: number[][], metadata: any }) => {
+const OpinionSimilarityViz = ({ data, metadata }: { data: any, metadata: any }) => {
+  // Handle new API format: data.matrix instead of direct array
+  // New format: { matrix: number[][], similarity_pairs: Record<string, number> }
+  // Old format: number[][] (direct matrix)
+  const matrix = data.matrix || data; // Fallback to old format for compatibility
+  
+  // Use speaking_agents from metadata, fallback to agent_names for compatibility
+  const agentNames = metadata.speaking_agents || metadata.agent_names || [];
+  
   // Filter data to show only upper triangle and diagonal (hide bottom-left triangle)
-  const nivoData = data.map((row, agentIndex) => {
+  const nivoData = matrix.map((row: number[], agentIndex: number) => {
     // Only include data points where agentIndex <= columnIndex (upper triangle + diagonal)
     const filteredData = row
       .map((value, columnIndex) => ({
-        x: metadata.agent_names?.[columnIndex] || `Agent ${columnIndex + 1}`,
+        x: agentNames[columnIndex] || `Agent ${columnIndex + 1}`,
         y: value
       }))
       .filter((_, columnIndex) => agentIndex <= columnIndex);
     
     return {
-      id: metadata.agent_names?.[agentIndex] || `Agent ${agentIndex + 1}`,
+      id: agentNames[agentIndex] || `Agent ${agentIndex + 1}`,
       data: filteredData
     };
-  }).filter(series => series.data.length > 0); // Remove empty series
+  }).filter((series: any) => series.data.length > 0); // Remove empty series
 
   // Check if matrix is small enough for numeric labels (accessibility)
-  const totalCells = nivoData.reduce((sum, series) => sum + series.data.length, 0);
+  const totalCells = nivoData.reduce((sum: number, series: any) => sum + series.data.length, 0);
   const showNumericLabels = totalCells <= 25; // Show labels for small matrices only
 
   return (

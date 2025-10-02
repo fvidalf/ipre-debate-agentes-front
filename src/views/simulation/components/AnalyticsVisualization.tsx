@@ -192,20 +192,24 @@ export const ParticipationStats = ({ data, metadata }: ParticipationStatsProps) 
 // ========================================================================================
 
 interface OpinionSimilarityProps {
-  data: number[][];
+  data: any; 
   metadata: {
     agent_names?: string[];
+    speaking_agents?: string[];
     similarity_range?: { min: number; max: number };
     note?: string;
   };
 }
 
 export const OpinionSimilarity = ({ data, metadata }: OpinionSimilarityProps) => {
+  const matrix = data.matrix || data; // Support both new and old formats
+  const agentNames = metadata.speaking_agents || metadata.agent_names || [];
+  
   // Transform data for Nivo HeatMap (symmetric matrix)
-  const nivoData = data.map((row, agentIndex) => ({
-    id: metadata.agent_names?.[agentIndex] || `Agent ${agentIndex + 1}`,
+  const nivoData = matrix.map((row: number[], agentIndex: number) => ({
+    id: agentNames[agentIndex] || `Agent ${agentIndex + 1}`,
     data: row.map((value, columnIndex) => ({
-      x: metadata.agent_names?.[columnIndex] || `Agent ${columnIndex + 1}`,
+      x: agentNames[columnIndex] || `Agent ${columnIndex + 1}`,
       y: value
     }))
   }));
@@ -245,7 +249,7 @@ export const OpinionSimilarity = ({ data, metadata }: OpinionSimilarityProps) =>
             <div className="bg-white p-2 shadow-lg rounded border">
               <strong>{cell.serieId}</strong> ↔ <strong>{cell.data.x}</strong>
               <br />
-              Similarity: <strong>{(cell.data.y * 100).toFixed(1)}%</strong>
+              Similarity: <strong>{((cell.data.y as number) * 100).toFixed(1)}%</strong>
             </div>
           )}
         />
