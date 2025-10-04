@@ -33,7 +33,16 @@ export function useConfigs(): UseConfigsReturn {
       setConfigs(response.configs);
     } catch (err) {
       console.error('Error fetching configs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch configs');
+      if (err instanceof Error && (err as any).status === 401) {
+        // Auth error - clear local state
+        setConfigs([]);
+        setSelectedConfigId(null);
+        setSelectedConfigRuns([]);
+        setExpandedConfigs(new Set());
+        setError('Authentication required');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to fetch configs');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +55,12 @@ export function useConfigs(): UseConfigsReturn {
       setSelectedConfigRuns(response.runs);
     } catch (err) {
       console.error('Error fetching config runs:', err);
-      setSelectedConfigRuns([]);
+      if (err instanceof Error && (err as any).status === 401) {
+        // Auth error - clear runs state
+        setSelectedConfigRuns([]);
+      } else {
+        setSelectedConfigRuns([]);
+      }
     } finally {
       setRunsLoading(false);
     }

@@ -1,15 +1,17 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, LogOut } from 'lucide-react';
 import { useConfigs } from '@/hooks/useConfigs';
 import DebateItem from './components/DebateItem';
 import Button from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 import { debateApi } from '@/lib/api';
 import { useState } from 'react';
+import { useAuthContext } from '@/components/AuthProvider';
 
 export default function MyDebatesView() {
   const router = useRouter();
+  const { logout } = useAuthContext();
   const [creatingConfig, setCreatingConfig] = useState(false);
   const {
     configs,
@@ -58,6 +60,14 @@ export default function MyDebatesView() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f3f3f3]">
@@ -69,13 +79,22 @@ export default function MyDebatesView() {
                 <h1 className="text-2xl font-bold text-gray-900">My Debates</h1>
                 <p className="text-gray-600 mt-1">Manage and run your debate configurations</p>
               </div>
-              <Button
-                disabled={true}
-                className="bg-gray-300 text-gray-500 cursor-not-allowed flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New Debate
-              </Button>
+              <div className="flex items-center gap-4">
+                <button
+                  disabled={true}
+                  className="flex items-center gap-2 text-gray-400 cursor-not-allowed"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+                <Button
+                  disabled={true}
+                  className="bg-gray-300 text-gray-500 cursor-not-allowed flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Debate
+                </Button>
+              </div>
             </div>
           </div>
         </header>
@@ -101,23 +120,32 @@ export default function MyDebatesView() {
               <h1 className="text-2xl font-bold text-gray-900">My Debates</h1>
               <p className="text-gray-600 mt-1">Manage and run your debate configurations</p>
             </div>
-            <Button
-              onClick={handleCreateNewDebate}
-              disabled={creatingConfig}
-              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2"
-            >
-              {creatingConfig ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  New Debate
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleCreateNewDebate}
+                disabled={creatingConfig}
+                className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2"
+              >
+                {creatingConfig ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    New Debate
+                  </>
+                )}
+              </Button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

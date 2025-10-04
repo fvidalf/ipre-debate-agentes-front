@@ -1,5 +1,19 @@
 const BASE_URL = 'http://localhost:8000';
 
+// Auth interfaces
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  message: string;
+  user: {
+    email: string;
+    id: string;
+  };
+}
+
 // NEW v3.0 interfaces
 export interface ModelInfo {
   id: string;
@@ -251,8 +265,17 @@ class DebateApiService {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Always include cookies for httpOnly auth
       ...options,
     });
+
+    if (response.status === 401) {
+      // Token expired or invalid - trigger logout event
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+      const error = new Error('Authentication required') as Error & { status: number };
+      error.status = 401;
+      throw error;
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
@@ -379,6 +402,46 @@ class DebateApiService {
     return this.makeRequest<DeleteConfigResponse>(`/configs/${configId}`, {
       method: 'DELETE',
     });
+  }
+
+  // Auth methods
+  async login(email: string, password: string): Promise<void> {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include', // Include cookies in requests
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
+      throw new Error(errorData.detail || 'Login failed');
+    }
+
+    // Token is now in httpOnly cookie, no need to handle response
+    return;
+  }
+
+  async logout(): Promise<void> {
+    // Note: Backend might not have a logout endpoint
+    // Just clear the httpOnly cookie on client side by not including credentials
+    // The cookie will expire based on its max-age (1 hour according to docs)
+    return;
+  }
+
+  async checkAuth(): Promise<boolean> {
+    try {
+      // Try to access a protected endpoint to verify auth
+      const response = await fetch(`${BASE_URL}/configs`, {
+        credentials: 'include',
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 }
 
