@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Agent, EditorConfig } from '@/types';
 
 interface UseEditorConfigReturn {
   configuration: EditorConfig;
+  loadedAgents: any[];
+  isLoading: boolean;
+  loadError: string | null;
   updateName: (name: string) => void;
   updateDescription: (description: string) => void;
   updateTopic: (topic: string) => void;
   updateMaxIterations: (maxIterations: number) => void;
   updateSettings: (updates: Partial<EditorConfig['settings']>) => void;
+  updateConfiguration: (updates: Partial<EditorConfig>) => void;
+  clearLoadedAgents: () => void;
   addAgent: (agent: Agent) => void;
   updateAgent: (agentId: string, updates: Partial<Agent>) => void;
   removeAgent: (agentId: string) => void;
@@ -31,11 +36,44 @@ const DEFAULT_CONFIGURATION: EditorConfig = {
   }
 };
 
-export function useEditorConfig(initialConfig?: Partial<EditorConfig>): UseEditorConfigReturn {
+export function useEditorConfig(configId?: string): UseEditorConfigReturn {
   const [configuration, setConfiguration] = useState<EditorConfig>({
-    ...DEFAULT_CONFIGURATION,
-    ...initialConfig,
+    ...DEFAULT_CONFIGURATION
   });
+  const [loadedAgents, setLoadedAgents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!configId) return;
+    
+    const loadConfig = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        
+        const { debateApi } = await import('@/lib/api');
+        const config = await debateApi.getConfig(configId);
+        
+        setConfiguration(prev => ({
+          ...prev,
+          name: config.name,
+          description: config.description,
+          topic: config.parameters.topic,
+          maxIterations: config.parameters.max_iters,
+        }));
+        
+        setLoadedAgents(config.agents || []);
+      } catch (error) {
+        console.error('Failed to load config in useEditorConfig:', error);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load configuration');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadConfig();
+  }, [configId]);
 
   const updateTopic = useCallback((topic: string) => {
     setConfiguration(prev => ({ ...prev, topic }));
@@ -95,13 +133,35 @@ export function useEditorConfig(initialConfig?: Partial<EditorConfig>): UseEdito
     return configuration.agents.length > 0;
   }, [configuration.agents]);
 
+  const updateConfiguration = useCallback((updates: Partial<EditorConfig>) => {
+    setConfiguration(prev => {
+      // Force a new object reference to trigger re-render
+      const newConfig = {
+        ...prev,
+        ...updates,
+        settings: { ...prev.settings, ...(updates.settings || {}) },
+        agents: updates.agents ? [...updates.agents] : [...prev.agents]
+      };
+      return newConfig;
+    });
+  }, []);
+
+  const clearLoadedAgents = useCallback(() => {
+    setLoadedAgents([]);
+  }, []);
+
   return {
     configuration,
+    loadedAgents,
+    isLoading,
+    loadError,
     updateName,
     updateDescription,
     updateTopic,
     updateMaxIterations,
     updateSettings,
+    updateConfiguration,
+    clearLoadedAgents,
     addAgent,
     updateAgent,
     removeAgent,

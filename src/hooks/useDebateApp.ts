@@ -14,99 +14,53 @@ export function useDebateApp(configId?: string) {
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [defaultModel, setDefaultModel] = useState<string>('');
   const [modelsLoading, setModelsLoading] = useState(true);
-  const [configLoading, setConfigLoading] = useState(!!configId);
-  const [configLoadError, setConfigLoadError] = useState<string | null>(null);
   
   // Use ref to prevent re-loading the same config multiple times
   const loadedConfigIdRef = useRef<string | null>(null);
 
   // Composed hooks
-  const debateConfig = useEditorConfig();
+  const debateConfig = useEditorConfig(configId);
   const canvasState = useCanvasState();
   const agentFactory = useAgentFactory();
   const simulationControl = useSimulationControl(configId);
   const uiState = useUIState();
 
-  // Load config if configId is provided
+  // Load agents when loadedAgents data becomes available
   useEffect(() => {
-    if (!configId) {
-      setConfigLoading(false);
-      return;
+    if (!debateConfig.loadedAgents || debateConfig.loadedAgents.length === 0) return;
+    
+    console.log('👥 useDebateApp - Processing loaded agents:', debateConfig.loadedAgents.length);
+    
+    // Use a ref to prevent processing the same agents multiple times
+    const agentsToProcess = debateConfig.loadedAgents;
+    
+    // Clear existing agents and nodes (except center)
+    const existingAgents = debateConfig.getEnabledAgents();
+    existingAgents.forEach(agent => {
+      debateConfig.removeAgent(agent.id);
+      canvasState.removeNode(agent.nodeId);
+    });
+    
+    // Load agents from config
+    const centerNode = canvasState.getCenterNode();
+    if (centerNode) {
+      agentsToProcess.forEach((configAgent, index) => {
+        const { agent, node } = agentFactory.createAgentFromConfigData(
+          configAgent, 
+          agentsToProcess.length,
+          centerNode
+        );
+        
+        canvasState.addNode(node);
+        debateConfig.addAgent(agent);
+      });
+      
+      // Clear the loaded agents to prevent reprocessing
+      debateConfig.clearLoadedAgents();
+    } else {
+      console.error('useDebateApp - No center node found');
     }
-    
-    if (loadedConfigIdRef.current === configId) {
-      setConfigLoading(false);
-      return;
-    }
-
-    loadedConfigIdRef.current = configId; // Mark as loading/loaded
-    
-    let isCancelled = false; // Flag to prevent state updates if component unmounts
-    
-    const loadConfig = async () => {
-      try {
-        setConfigLoading(true);
-        setConfigLoadError(null);
-        const config = await debateApi.getConfig(configId);
-        
-        
-        if (isCancelled) return; // Don't update state if cancelled
-        
-        // Update debate configuration with loaded data
-        debateConfig.updateName(config.name);
-        debateConfig.updateDescription(config.description);
-        debateConfig.updateTopic(config.parameters.topic);
-        debateConfig.updateMaxIterations(config.parameters.max_iters);
-        
-        // Clear existing agents and nodes (except center)
-        const existingAgents = debateConfig.getEnabledAgents();
-        existingAgents.forEach(agent => {
-          debateConfig.removeAgent(agent.id);
-          canvasState.removeNode(agent.nodeId);
-        });
-        
-        // Load agents from config if they exist
-        if (config.agents && config.agents.length > 0) {
-          const centerNode = canvasState.getCenterNode();
-          if (centerNode) {
-            // Add agents from the loaded config
-            config.agents.forEach((configAgent, index) => {
-              const { agent, node } = agentFactory.createAgentFromConfigData(
-                configAgent, 
-                config.agents!.length, // Pass total count instead of index
-                centerNode
-              );
-              canvasState.addNode(node);
-              debateConfig.addAgent(agent);
-            });
-          } else {
-            console.error('useDebateApp - No center node found');
-          }
-        } else {
-        }
-      } catch (error) {
-        if (isCancelled) return; // Don't update state if cancelled
-        
-        console.error('Failed to load config:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        setConfigLoadError(errorMessage);
-        
-        // Reset the ref if loading failed so it can be retried
-        loadedConfigIdRef.current = null;
-      } finally {
-        if (!isCancelled) {
-          setConfigLoading(false);
-        }
-      }
-    };
-
-    loadConfig();
-    
-    // Cleanup function
-    return () => {
-      isCancelled = true;
-    };
-  }, [configId]); // Only depend on configId to prevent infinite loops
+  }, [debateConfig.loadedAgents.length]); // Only depend on the length, not the array itself
 
   // Fetch available models on component mount
   useEffect(() => {
@@ -299,8 +253,8 @@ export function useDebateApp(configId?: string) {
     availableModels,
     defaultModel,
     modelsLoading,
-    configLoading,
-    configLoadError,
+    configLoading: debateConfig.isLoading,
+    configLoadError: debateConfig.loadError,
     
     // Tools
     tools,

@@ -165,7 +165,7 @@ export interface Config {
     bias: number[];
     stance: string;
     embedding_model: string;
-    agent_count: number;
+    embedding_config: object;
   };
   version_number: number;
   source_template_id?: string;
