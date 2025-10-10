@@ -52,6 +52,7 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
           model_id: a.model_id || undefined
         })),
         max_iters: configuration.maxIterations,
+        max_interventions_per_agent: configuration.maxInterventionsPerAgent,
         bias: enabledAgents.map(a => a.bias || 0),
         stance: "neutral",
         // Include config_id if we're editing an existing config
@@ -96,6 +97,7 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
         description: configuration.description,
         agents: agentsToConfigUpdate(enabledAgents, nodes),
         max_iters: configuration.maxIterations,
+        max_interventions_per_agent: configuration.maxInterventionsPerAgent,
         bias: enabledAgents.map(a => a.bias || 0),
         stance: "neutral" // Could be configurable in the future
       };

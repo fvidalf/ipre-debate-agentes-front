@@ -33,6 +33,7 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
     handleSettingsUpdate,
     handleTopicUpdate,
     handleMaxIterationsUpdate,
+    handleMaxInterventionsPerAgentUpdate,
     handleRemoveAgent,
     handleToolToggle,
     handleAgentSelect,
@@ -125,6 +126,7 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
             onSettingsUpdate={handleSettingsUpdate}
             onTopicUpdate={handleTopicUpdate}
             onMaxIterationsUpdate={handleMaxIterationsUpdate}
+            onMaxInterventionsPerAgentUpdate={handleMaxInterventionsPerAgentUpdate}
             onRemoveAgent={handleRemoveAgent}
             onClose={() => setSelectedNodeId(null)}
           />

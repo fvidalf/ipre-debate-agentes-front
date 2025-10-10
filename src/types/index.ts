@@ -35,6 +35,7 @@ export type EditorConfig = {
   description: string;
   topic: string;
   maxIterations: number;
+  maxInterventionsPerAgent?: number;
   agents: Agent[];
   settings: {
     temperature: number;

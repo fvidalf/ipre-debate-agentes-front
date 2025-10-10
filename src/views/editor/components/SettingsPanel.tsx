@@ -18,6 +18,7 @@ interface SettingsPanelProps {
   onSettingsUpdate: (updates: Partial<EditorConfig['settings']>) => void;
   onTopicUpdate: (topic: string) => void;
   onMaxIterationsUpdate: (maxIterations: number) => void;
+  onMaxInterventionsPerAgentUpdate: (maxInterventionsPerAgent: number | undefined) => void;
   onRemoveAgent: (agentId: string) => void;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export default function SettingsPanel({
   onSettingsUpdate,
   onTopicUpdate,
   onMaxIterationsUpdate,
+  onMaxInterventionsPerAgentUpdate,
   onRemoveAgent,
   onClose
 }: SettingsPanelProps) {
@@ -68,6 +70,7 @@ export default function SettingsPanel({
         onSettingsUpdate={onSettingsUpdate}
         onTopicUpdate={onTopicUpdate}
         onMaxIterationsUpdate={onMaxIterationsUpdate}
+        onMaxInterventionsPerAgentUpdate={onMaxInterventionsPerAgentUpdate}
       />
     </BasePanel>
   );
@@ -200,16 +203,21 @@ function AgentConfigurationForm({ agent, availableModels, defaultModel, modelsLo
   );
 }
 
-function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate, onSettingsUpdate, onTopicUpdate, onMaxIterationsUpdate }: {
+function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate, onSettingsUpdate, onTopicUpdate, onMaxIterationsUpdate, onMaxInterventionsPerAgentUpdate }: {
   configuration: EditorConfig;
   onNameUpdate: (name: string) => void;
   onDescriptionUpdate: (description: string) => void;
   onSettingsUpdate: (updates: Partial<EditorConfig['settings']>) => void;
   onTopicUpdate: (topic: string) => void;
   onMaxIterationsUpdate: (maxIterations: number) => void;
+  onMaxInterventionsPerAgentUpdate: (maxInterventionsPerAgent: number | undefined) => void;
 }) {
   const handleMaxIterationsChange = (value: number) => {
     onMaxIterationsUpdate(value);
+  };
+
+  const handleMaxInterventionsPerAgentChange = (value: number | undefined) => {
+    onMaxInterventionsPerAgentUpdate(value);
   };
 
   return (
@@ -263,6 +271,19 @@ function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate,
               type="number" 
               value={configuration.maxIterations}
               onChange={(e) => handleMaxIterationsChange(parseInt(e.target.value) || 21)}
+              className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-neutral-600">Max interventions per agent</label>
+            <input 
+              type="number" 
+              value={configuration.maxInterventionsPerAgent || ''}
+              placeholder="Auto"
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                handleMaxInterventionsPerAgentChange(isNaN(value) ? undefined : value);
+              }}
               className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
             />
           </div>

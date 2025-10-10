@@ -226,7 +226,7 @@ export function useDebateApp(configId?: string) {
     handleNodeClick,
     handleCanvasClick: canvasState.handleCanvasClick,
     
-    // Configuration State
+    // Configuration Management
     configuration: debateConfig.configuration,
     agents: debateConfig.configuration.agents,
     handleAgentUpdate: debateConfig.updateAgent,
@@ -235,6 +235,7 @@ export function useDebateApp(configId?: string) {
     handleSettingsUpdate: debateConfig.updateSettings,
     handleTopicUpdate: debateConfig.updateTopic,
     handleMaxIterationsUpdate: debateConfig.updateMaxIterations,
+    handleMaxInterventionsPerAgentUpdate: debateConfig.updateMaxInterventionsPerAgent,
     
     // Agent Management
     handleCreateAgent,

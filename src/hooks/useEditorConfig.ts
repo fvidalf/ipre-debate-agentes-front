@@ -12,6 +12,7 @@ interface UseEditorConfigReturn {
   updateDescription: (description: string) => void;
   updateTopic: (topic: string) => void;
   updateMaxIterations: (maxIterations: number) => void;
+  updateMaxInterventionsPerAgent: (maxInterventionsPerAgent: number | undefined) => void;
   updateSettings: (updates: Partial<EditorConfig['settings']>) => void;
   updateConfiguration: (updates: Partial<EditorConfig>) => void;
   clearLoadedAgents: () => void;
@@ -61,6 +62,7 @@ export function useEditorConfig(configId?: string): UseEditorConfigReturn {
           description: config.description,
           topic: config.parameters.topic,
           maxIterations: config.parameters.max_iters,
+          maxInterventionsPerAgent: config.parameters.max_interventions_per_agent,
         }));
         
         setLoadedAgents(config.agents || []);
@@ -89,6 +91,10 @@ export function useEditorConfig(configId?: string): UseEditorConfigReturn {
 
   const updateMaxIterations = useCallback((maxIterations: number) => {
     setConfiguration(prev => ({ ...prev, maxIterations }));
+  }, []);
+
+  const updateMaxInterventionsPerAgent = useCallback((maxInterventionsPerAgent: number | undefined) => {
+    setConfiguration(prev => ({ ...prev, maxInterventionsPerAgent }));
   }, []);
 
   const updateSettings = useCallback((updates: Partial<EditorConfig['settings']>) => {
@@ -159,6 +165,7 @@ export function useEditorConfig(configId?: string): UseEditorConfigReturn {
     updateDescription,
     updateTopic,
     updateMaxIterations,
+    updateMaxInterventionsPerAgent,
     updateSettings,
     updateConfiguration,
     clearLoadedAgents,

@@ -37,6 +37,7 @@ export interface SimulationRequest {
   topic: string;
   agents: Agent[];
   max_iters?: number;
+  max_interventions_per_agent?: number;
   bias?: number[];
   stance?: string;
   embedding_model?: string;
@@ -162,6 +163,7 @@ export interface Config {
   parameters: {
     topic: string;
     max_iters: number;
+    max_interventions_per_agent?: number;
     bias: number[];
     stance: string;
     embedding_model: string;
@@ -247,6 +249,7 @@ export interface UpdateConfigRequest {
     };
   }>;
   max_iters?: number;
+  max_interventions_per_agent?: number;
   bias?: number[];
   stance?: string;
   embedding_model?: string;
@@ -426,9 +429,7 @@ class DebateApiService {
   }
 
   async logout(): Promise<void> {
-    // Note: Backend might not have a logout endpoint
     // Just clear the httpOnly cookie on client side by not including credentials
-    // The cookie will expire based on its max-age (1 hour according to docs)
     return;
   }
 
