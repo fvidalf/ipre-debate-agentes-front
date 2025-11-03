@@ -183,10 +183,14 @@ export function useAgentFactory(): UseAgentFactoryReturn {
       id: generateId(),
       name: configAgent.name,
       nodeId,
-      personality: configAgent.snapshot.profile,
-      bias: 0, // Could extract from config if available
+      personality: configAgent.profile,
+      bias: 0,
       enabled: true,
-      model_id: configAgent.snapshot.model_id,
+      model_id: configAgent.model_id,
+      lm_config: configAgent.lm_config,
+      web_search_tools: configAgent.web_search_tools,
+      recall_tools: configAgent.recall_tools,
+      document_ids: configAgent.document_ids
     };
 
     return { agent, node };

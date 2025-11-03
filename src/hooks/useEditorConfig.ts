@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Agent, EditorConfig } from '@/types';
+import { ConfigAgent } from '@/lib/api';
 
 interface UseEditorConfigReturn {
   configuration: EditorConfig;
-  loadedAgents: any[];
+  loadedAgents: ConfigAgent[];
   isLoading: boolean;
   loadError: string | null;
   updateName: (name: string) => void;
@@ -41,7 +42,7 @@ export function useEditorConfig(configId?: string): UseEditorConfigReturn {
   const [configuration, setConfiguration] = useState<EditorConfig>({
     ...DEFAULT_CONFIGURATION
   });
-  const [loadedAgents, setLoadedAgents] = useState<any[]>([]);
+  const [loadedAgents, setLoadedAgents] = useState<ConfigAgent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -59,7 +60,7 @@ export function useEditorConfig(configId?: string): UseEditorConfigReturn {
         setConfiguration(prev => ({
           ...prev,
           name: config.name,
-          description: config.description,
+          description: config.description || '',
           topic: config.parameters.topic,
           maxIterations: config.parameters.max_iters,
           maxInterventionsPerAgent: config.parameters.max_interventions_per_agent,

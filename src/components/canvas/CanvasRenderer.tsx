@@ -3,7 +3,8 @@
 import { forwardRef } from 'react';
 import { User, Mic } from 'lucide-react';
 import { Node } from '@/types';
-import { getNodeStyles, getNodeSizeInfo, getMiniNodeStyles, getInnerNodeSize } from '@/styles/patterns';
+import { getNodeStyles, getNodeSizeInfo, getMiniNodeStyles, getInnerNodeSize, getToolNodeColor } from '@/styles/patterns';
+import { getToolIconComponent } from '@/lib/agentUtils';
 
 interface CanvasRendererProps {
   nodes: Node[];
@@ -81,6 +82,7 @@ const CanvasRenderer = forwardRef<HTMLDivElement, CanvasRendererProps>(({
           viewBox={viewBox}
           preserveAspectRatio={preserveAspectRatio}
         >
+          {/* Lines from center to peer agents */}
           {center && peers.map((peer) => (
             <line
               key={`edge-${peer.id}`}
@@ -93,6 +95,26 @@ const CanvasRenderer = forwardRef<HTMLDivElement, CanvasRendererProps>(({
               strokeWidth="0.8"
             />
           ))}
+          
+          {/* Lines from peer agents to their tool nodes */}
+          {nodes.filter(n => n.type === 'tool').map((toolNode) => {
+            const parentAgent = nodes.find(n => n.id === toolNode.parentAgentId);
+            if (!parentAgent) return null;
+            
+            return (
+              <line
+                key={`tool-edge-${toolNode.id}`}
+                x1={parentAgent.x}
+                y1={parentAgent.y}
+                x2={toolNode.x}
+                y2={toolNode.y}
+                vectorEffect="non-scaling-stroke"
+                stroke="rgba(0,0,0,0.3)"
+                strokeWidth="1.2"
+                strokeDasharray="4 2"
+              />
+            );
+          })}
         </svg>
 
         {/* Nodes */}
@@ -150,11 +172,54 @@ function NodeComponent({
   onClick 
 }: NodeComponentProps) {
   const isCenter = node.type === 'center';
+  const isAgent = node.type === 'peer';
+  const isTool = node.type === 'tool';
   const isSelected = selectedNodeId === node.id;
   
   // Get appropriate styles based on variant
   if (variant === 'mini') {
     const miniStyles = getMiniNodeStyles(node.type, nodeSize);
+    
+    if (isTool) {
+      const ToolIcon = getToolIconComponent(node.toolId!);
+      const toolColor = getToolNodeColor(node.toolId!);
+      
+      return (
+        <div
+          className={miniStyles.container}
+          style={{
+            left: `${node.x}%`,
+            top: `${node.y}%`,
+          }}
+          onMouseDown={onMouseDown ? (e) => onMouseDown(node.id, e) : undefined}
+          onClick={onClick ? (e) => {
+            e.stopPropagation();
+            onClick(node.id, e);
+          } : undefined}
+          aria-label={`Tool: ${node.toolId}`}
+        >
+          <div 
+            className={miniStyles.inner} 
+            style={{ 
+              borderColor: toolColor, 
+              backgroundColor: `${toolColor}20` 
+            }}
+          >
+            <ToolIcon className={`${miniStyles.iconSize}`} style={{ color: toolColor }} />
+          </div>
+          
+          {/* Tool label */}
+          {showLabel && node.toolId && (
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1">
+              <div className="bg-white px-2 py-1 rounded border shadow-sm text-xs font-medium text-gray-700 whitespace-nowrap">
+                {node.name || node.toolId.replace('_tool', '').replace('_', ' ')}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
     return (
       <div
         className={miniStyles.container}
@@ -194,6 +259,41 @@ function NodeComponent({
   // For editor and simulation variants
   const nodeClassName = getNodeStyles(node.type, { isSelected, isDragging: false }, nodeSize);
   const innerNodeSize = getInnerNodeSize(node.type, nodeSize);
+  
+  if (isTool) {
+    const ToolIcon = getToolIconComponent(node.toolId!);
+    const toolColor = getToolNodeColor(node.toolId!);
+    
+    return (
+      <div
+        className={nodeClassName}
+        style={{
+          left: `${node.x}%`,
+          top: `${node.y}%`,
+          backgroundColor: toolColor,
+        }}
+        onMouseDown={onMouseDown ? (e) => onMouseDown(node.id, e) : undefined}
+        onClick={onClick ? (e) => {
+          e.stopPropagation();
+          onClick(node.id, e);
+        } : undefined}
+        aria-label={`Tool: ${node.toolId}`}
+      >
+        <div className={`${innerNodeSize} rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-inner`}>
+          <ToolIcon className={`${sizeInfo.icon}`} style={{ color: toolColor }} />
+        </div>
+        
+        {/* Tool label */}
+        {showLabel && node.toolId && (
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1">
+            <div className="bg-white px-2 py-1 rounded border shadow-sm text-xs font-medium text-gray-700 whitespace-nowrap">
+              {node.name || node.toolId.replace('_tool', '').replace('_', ' ')}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
   
   return (
     <div

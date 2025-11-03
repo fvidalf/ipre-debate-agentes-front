@@ -30,7 +30,7 @@ export function useAgentTemplates(initialParams?: GetTemplatesParams): UseAgentT
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch agent templates';
       
-      if (err instanceof Error && (err as any).status === 401) {
+      if (err instanceof Error && (err as Error & { status?: number }).status === 401) {
         // Auth error - clear templates state
         setTemplates([]);
         setError('Authentication required');

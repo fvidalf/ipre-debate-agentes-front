@@ -1,4 +1,6 @@
 'use client';
+import { useState } from 'react';
+import { ChevronDown, ChevronRight, Brain, Search } from 'lucide-react';
 import { Config } from '@/lib/api';
 
 interface DebateEventsPanelProps {
@@ -52,22 +54,7 @@ export default function DebateEventsPanel({
           {simulationStatus?.latest_events?.length > 0 ? (
             <div className="space-y-3">
               {simulationStatus.latest_events.map((event: any, index: number) => (
-                <div key={index} className="bg-white border border-neutral-200 rounded-xl p-4 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-purple-600">
-                      {event.speaker}
-                    </span>
-                    <span className="text-xs text-neutral-600">
-                      Iteration {event.iteration} • {new Date(event.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p className="text-neutral-900 mb-2 whitespace-pre-wrap break-words leading-relaxed">{event.opinion}</p>
-                  {event.engaged.length > 0 && (
-                    <div className="text-xs text-neutral-600">
-                      Engaged: {event.engaged.join(', ')}
-                    </div>
-                  )}
-                </div>
+                <DebateEventCard key={index} event={event} />
               ))}
             </div>
           ) : simulationStatus ? (
@@ -102,4 +89,102 @@ export default function DebateEventsPanel({
       </div>
     </div>
   );
+}
+
+function DebateEventCard({ event }: { event: any }) {
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
+
+  const reasoningStepsCount = event.reasoning_timeline?.filter((item: any) => item.type === 'thought')?.length || 0;
+  const toolUsagesCount = event.reasoning_timeline?.filter((item: any) => item.type === 'tool_call')?.length || 0;
+  const hasReasoningData = event.reasoning_timeline && event.reasoning_timeline.length > 0;
+
+  return (
+    <div className="bg-white border border-neutral-200 rounded-xl p-4 hover:shadow-sm transition-all">
+      {/* Event header */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-medium text-purple-600">
+          {event.speaker}
+        </span>
+        <span className="text-xs text-neutral-600">
+          Iteration {event.iteration} • {new Date(event.timestamp).toLocaleTimeString()}
+        </span>
+      </div>
+      
+      {/* Event content */}
+      <p className="text-neutral-900 mb-2 whitespace-pre-wrap break-words leading-relaxed">
+        {event.opinion}
+      </p>
+      
+      {/* Engaged agents */}
+      {event.engaged.length > 0 && (
+        <div className="text-xs text-neutral-600 mb-3">
+          Engaged: {event.engaged.join(', ')}
+        </div>
+      )}
+      
+      {/* Reasoning timeline toggle */}
+      {hasReasoningData && (
+        <div className="border-t border-neutral-100 pt-3">
+          <button
+            onClick={() => setIsReasoningExpanded(!isReasoningExpanded)}
+            className="flex items-center gap-2 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+          >
+            {isReasoningExpanded ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronRight className="w-3 h-3" />
+            )}
+            <Brain className="w-3 h-3" />
+            <span>
+              {event.speaker} took {reasoningStepsCount} reasoning step{reasoningStepsCount !== 1 ? 's' : ''}
+              {toolUsagesCount > 0 && `, and used tools ${toolUsagesCount} time${toolUsagesCount !== 1 ? 's' : ''}`}
+            </span>
+          </button>
+          
+          {/* Expanded reasoning timeline */}
+          {isReasoningExpanded && (
+            <div className="mt-3 space-y-2 pl-5 border-l-2 border-neutral-100">
+              {event.reasoning_timeline.map((item: any, index: number) => (
+                <ReasoningTimelineItem key={index} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component for individual reasoning timeline items
+function ReasoningTimelineItem({ item }: { item: any }) {
+  if (item.type === 'thought') {
+    return (
+      <div className="flex gap-2">
+        <Brain className="w-3 h-3 text-blue-500 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-neutral-600 leading-relaxed">
+          <span className="font-medium text-blue-600">Thought:</span>{' '}
+          {item.content}
+        </div>
+      </div>
+    );
+  }
+  
+  if (item.type === 'tool_call') {
+    return (
+      <div className="flex gap-2">
+        <Search className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+        <div className="text-xs text-neutral-600 leading-relaxed">
+          <span className="font-medium text-green-600">Tool ({item.tool_name}):</span>{' '}
+          <span className="italic">&quot;{item.query}&quot;</span>
+          {item.result && (
+            <div className="mt-1 text-neutral-500 bg-neutral-50 p-2 rounded border-l-2 border-green-200 whitespace-pre-wrap">
+              {item.result}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
 }

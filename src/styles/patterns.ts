@@ -66,6 +66,8 @@ export const styleGuide = {
   nodes: {
     // Base node styles (working original styles)
     base: "absolute transform -translate-x-1/2 -translate-y-1/2 rounded-2xl flex items-center justify-center shadow-lg cursor-move transition-transform",
+    // Tool node base (circular instead of rounded-2xl)
+    toolBase: "absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center shadow-lg cursor-move transition-transform",
     // Node borders
     border: {
       normal: "border border-black/5",
@@ -76,19 +78,22 @@ export const styleGuide = {
       small: {
         center: "w-8 h-8",
         peer: "w-8 h-8",
-        inner: { center: "w-7 h-7", peer: "w-7 h-7" }, // Inner node smaller than container
+        tool: "w-7 h-7", // Tool nodes are smaller and circular
+        inner: { center: "w-7 h-7", peer: "w-7 h-7", tool: "w-6 h-6" },
         icon: "w-3 h-3",
       },
       medium: {
         center: "w-14 h-14",
-        peer: "w-14 h-14", 
-        inner: { center: "w-12 h-12", peer: "w-12 h-12" }, // Inner node smaller than container
+        peer: "w-14 h-14",
+        tool: "w-12 h-12", // Tool nodes are smaller and circular
+        inner: { center: "w-12 h-12", peer: "w-12 h-12", tool: "w-10 h-10" },
         icon: "w-6 h-6",
       },
       large: {
         center: "w-20 h-20",
         peer: "w-20 h-20",
-        inner: { center: "w-16 h-16", peer: "w-16 h-16" }, // Inner node smaller than container
+        tool: "w-18 h-18", // Tool nodes are smaller and circular - made bigger
+        inner: { center: "w-16 h-16", peer: "w-16 h-16", tool: "w-15 h-15" },
         icon: "w-8 h-8",
       },
     },
@@ -110,6 +115,16 @@ export const styleGuide = {
     effects: {
       center: "saturate-100",
       peer: "saturate-110",
+      tool: "saturate-120",
+    },
+    // Tool node colors by tool type
+    toolColors: {
+      wikipedia_tool: "#3B82F6", // Blue
+      news_tool: "#EF4444", // Red
+      pages_tool: "#10B981", // Green
+      google_ai_tool: "#8B5CF6", // Purple
+      documents_tool: "#F59E0B", // Amber
+      notes_tool: "#EC4899", // Pink
     },
   },
 } as const;
@@ -131,17 +146,15 @@ export function combineStyles(...styles: string[]): string {
 
 // Specialized utility for node styling
 export function getNodeStyles(
-  type: 'center' | 'peer',
+  type: 'center' | 'peer' | 'tool',
   state: { isSelected: boolean; isDragging: boolean },
   nodeSize: 'small' | 'medium' | 'large' = 'medium'
 ): string {
-  const base = styleGuide.nodes.base;
-  const size = type === 'center' 
-    ? styleGuide.nodes.size[nodeSize].center 
-    : styleGuide.nodes.size[nodeSize].peer;
+  const base = type === 'tool' ? styleGuide.nodes.toolBase : styleGuide.nodes.base;
+  const size = styleGuide.nodes.size[nodeSize][type];
   const border = state.isSelected ? styleGuide.nodes.border.selected : styleGuide.nodes.border.normal;
   const stateStyle = state.isDragging ? styleGuide.nodes.state.dragging : styleGuide.nodes.state.normal;
-  const effects = type === 'center' ? styleGuide.nodes.effects.center : styleGuide.nodes.effects.peer;
+  const effects = styleGuide.nodes.effects[type];
   
   return combineStyles(base, size, border, stateStyle, effects);
 }
@@ -153,28 +166,35 @@ export function getNodeSizeInfo(nodeSize: 'small' | 'medium' | 'large' = 'medium
 
 // Utility to get inner node size for a specific node type and size variant
 export function getInnerNodeSize(
-  type: 'center' | 'peer', 
+  type: 'center' | 'peer' | 'tool', 
   nodeSize: 'small' | 'medium' | 'large' = 'medium'
 ): string {
   return styleGuide.nodes.size[nodeSize].inner[type];
 }
 
+// Utility to get tool node color
+export function getToolNodeColor(toolId: string): string {
+  return styleGuide.nodes.toolColors[toolId as keyof typeof styleGuide.nodes.toolColors] || '#6B7280';
+}
+
 // Utility to get mini variant styles (now uses unified sizing system)
 export function getMiniNodeStyles(
-  type: 'center' | 'peer', 
+  type: 'center' | 'peer' | 'tool', 
   nodeSize: 'small' | 'medium' | 'large' = 'medium'
 ): {
   container: string;
   inner: string;
   iconSize: string;
 } {
-  const sizeClass = type === 'center' 
-    ? styleGuide.nodes.size[nodeSize].center 
-    : styleGuide.nodes.size[nodeSize].peer;
+  const sizeClass = styleGuide.nodes.size[nodeSize][type];
+  const baseClass = type === 'tool' ? styleGuide.nodes.mini.base : styleGuide.nodes.mini.base;
+  const innerClass = type === 'tool' 
+    ? 'w-full h-full rounded-full bg-white border-2 flex items-center justify-center shadow-sm'
+    : styleGuide.nodes.mini.inner;
   
   return {
-    container: combineStyles(styleGuide.nodes.mini.base, sizeClass),
-    inner: styleGuide.nodes.mini.inner,
+    container: combineStyles(baseClass, sizeClass),
+    inner: innerClass,
     iconSize: styleGuide.nodes.size[nodeSize].icon,
   };
 }

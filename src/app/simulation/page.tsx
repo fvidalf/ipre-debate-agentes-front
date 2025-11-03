@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import { debateApi, SimulationStatusResponse, VoteResponse, AnalyticsType } from '@/lib/api';
+import { debateApi, SimulationStatusResponse, VoteResponse, AnalyticsType, AnalyticsResponse, Config } from '@/lib/api';
 import { SimulationLayout } from '@/views/simulation';
 
 function SimulationPageContent() {
@@ -12,10 +12,10 @@ function SimulationPageContent() {
   const [voteResults, setVoteResults] = useState<VoteResponse | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
-  const [analyticsResults, setAnalyticsResults] = useState<any>(null);
+  const [analyticsResults, setAnalyticsResults] = useState<AnalyticsResponse | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const [configSnapshot, setConfigSnapshot] = useState<any>(null);
+  const [configSnapshot, setConfigSnapshot] = useState<Config | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,9 +102,9 @@ function SimulationPageContent() {
       const voteResponse = await debateApi.getSimulationVotes(id);
       setVoteResults(voteResponse);
       console.log('Existing votes fetched:', voteResponse);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't set error for 404 - just means no votes exist yet
-      if (err.status !== 404) {
+      if ((err as { status?: number }).status !== 404) {
         console.error('Failed to fetch existing votes:', err);
         const errorMessage = 'Failed to load existing votes';
         setVoteError(errorMessage);
@@ -121,8 +121,8 @@ function SimulationPageContent() {
       const analyticsResponse = await debateApi.getSimulationAnalytics(id);
       setAnalyticsResults(analyticsResponse);
       console.log('Existing analytics fetched:', analyticsResponse);
-    } catch (err: any) {
-      if (err.status !== 404) {
+    } catch (err: unknown) {
+      if ((err as { status?: number }).status !== 404) {
         console.error('Failed to fetch existing analytics:', err);
         const errorMessage = 'Failed to load existing analytics';
         setAnalyticsError(errorMessage);
@@ -142,9 +142,9 @@ function SimulationPageContent() {
       const voteResponse = await debateApi.voteSimulation(simulationId);
       setVoteResults(voteResponse);
       console.log('Vote results:', voteResponse);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't set error for 404 - just means no votes exist yet
-      if (err.status !== 404) {
+      if ((err as { status?: number }).status !== 404) {
         console.error('Failed to trigger voting:', err);
         const errorMessage = 'Failed to start voting';
         setVoteError(errorMessage);
@@ -164,9 +164,9 @@ function SimulationPageContent() {
       const analyticsResponse = await debateApi.analyzeSimulation(simulationId);
       setAnalyticsResults(analyticsResponse);
       console.log('Analytics data fetched:', analyticsResponse);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Don't set error for 404 - just means no analytics exist yet
-      if (err.status !== 404) {
+      if ((err as { status?: number }).status !== 404) {
         console.error('Failed to fetch analytics data:', err);
         const errorMessage = 'Failed to load analytics data';
         setAnalyticsError(errorMessage);

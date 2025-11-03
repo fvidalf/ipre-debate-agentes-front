@@ -1,7 +1,8 @@
 'use client';
 
-import { Sidebar, Canvas, ToolsPanel, AgentsPanel, SettingsPanel } from './components';
+import { Sidebar, Canvas, ToolsPanel, AgentsPanel, SettingsPanel, DragOverlay } from './components';
 import { useDebateApp } from '@/hooks/useDebateApp';
+import { DragDropProvider, useDragDrop } from '@/hooks/useDragDrop';
 
 interface EditorLayoutProps {
   configId?: string;
@@ -12,7 +13,6 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
     activeOption,
     setActiveOption,
     nodes,
-    tools,
     agents,
     isRunning,
     isSaving,
@@ -36,6 +36,8 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
     handleMaxInterventionsPerAgentUpdate,
     handleRemoveAgent,
     handleToolToggle,
+    handleToolDrop,
+    handleRemoveTool,
     handleAgentSelect,
     handleCreateAgent,
     handleSelectPrebuiltAgent,
@@ -43,6 +45,9 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
     handleRun,
     canSave,
     setSelectedNodeId,
+    availableTools,
+    toolsLoading,
+    toolsError,
   } = useDebateApp(configId);
 
   // Show loading state when loading config
@@ -108,7 +113,6 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
       case 'tools':
         return (
           <ToolsPanel
-            tools={tools}
             onToolToggle={handleToolToggle}
           />
         );
@@ -116,10 +120,14 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
         return (
           <SettingsPanel 
             selectedNodeId={selectedNodeId}
+            nodes={nodes}
             configuration={configuration}
             availableModels={availableModels}
             defaultModel={defaultModel}
             modelsLoading={modelsLoading}
+            availableTools={availableTools}
+            toolsLoading={toolsLoading}
+            toolsError={toolsError}
             onAgentUpdate={handleAgentUpdate}
             onNameUpdate={handleNameUpdate}
             onDescriptionUpdate={handleDescriptionUpdate}
@@ -128,6 +136,7 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
             onMaxIterationsUpdate={handleMaxIterationsUpdate}
             onMaxInterventionsPerAgentUpdate={handleMaxInterventionsPerAgentUpdate}
             onRemoveAgent={handleRemoveAgent}
+            onRemoveTool={handleRemoveTool}
             onClose={() => setSelectedNodeId(null)}
           />
         );
@@ -141,31 +150,35 @@ export default function EditorLayout({ configId }: EditorLayoutProps) {
   };
 
   return (
-    <div className="grid grid-cols-[64px_320px_1fr] h-screen bg-[#f3f3f3] text-neutral-900 font-sans">
-      {/* Left Sidebar */}
-      <Sidebar
-        activeOption={activeOption}
-        onOptionChange={handleSidebarOptionChange}
-      />
+    <DragDropProvider>
+      <div className="grid grid-cols-[64px_320px_1fr] h-screen bg-[#f3f3f3] text-neutral-900 font-sans">
+        {/* Left Sidebar */}
+        <Sidebar
+          activeOption={activeOption}
+          onOptionChange={handleSidebarOptionChange}
+        />
 
-      {/* Middle Panel */}
-      <div className="hidden md:flex md:flex-col md:min-h-0 md:overflow-hidden">
-        {renderMiddlePanel()}
+        {/* Middle Panel */}
+        <div className="hidden md:flex md:flex-col md:min-h-0 md:overflow-hidden">
+          {renderMiddlePanel()}
+        </div>
+
+        {/* Main Canvas */}
+        <Canvas
+          nodes={nodes}
+          selectedNodeId={highlightedNodeId}
+          onNodeMove={handleNodeMove}
+          onNodeClick={handleNodeClick}
+          onCanvasClick={handleCanvasClick}
+          onSave={handleSave}
+          onRun={handleRun}
+          onToolDrop={handleToolDrop}
+          canSave={canSave}
+          isRunning={isRunning}
+          isSaving={isSaving}
+        />
       </div>
-
-      {/* Main Canvas */}
-      <Canvas
-        nodes={nodes}
-        selectedNodeId={highlightedNodeId}
-        onNodeMove={handleNodeMove}
-        onNodeClick={handleNodeClick}
-        onCanvasClick={handleCanvasClick}
-        onSave={handleSave}
-        onRun={handleRun}
-        canSave={canSave}
-        isRunning={isRunning}
-        isSaving={isSaving}
-      />
-    </div>
+      <DragOverlay />
+    </DragDropProvider>
   );
 }

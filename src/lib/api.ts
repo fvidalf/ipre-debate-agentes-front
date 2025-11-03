@@ -1,5 +1,7 @@
 const BASE_URL = 'http://localhost:8000';
 
+import { WebSearchToolsConfig, RecallToolsConfig } from '@/types';
+
 // Auth interfaces
 export interface LoginRequest {
   username: string;
@@ -27,10 +29,100 @@ export interface ModelsResponse {
   default_model: string;
 }
 
+export interface ToolInfo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  config_schema: {
+    enabled: {
+      type: string;
+      default: boolean;
+      description: string;
+    };
+    sources?: {
+      type: string;
+      items: { type: string };
+      default: string[];
+      description: string;
+    };
+  };
+}
+
+export interface ToolsResponse {
+  tools: {
+    web_search_tools: ToolInfo[];
+    recall_tools: ToolInfo[];
+  };
+}
+
+export interface LMConfig {
+  temperature?: number; // 0.0-2.0, controls creativity
+  max_tokens?: number; // 1-4096, response length limit
+  top_p?: number; // 0.0-1.0, nucleus sampling
+  frequency_penalty?: number; // -2.0-2.0, reduces repetition
+  presence_penalty?: number; // -2.0-2.0, encourages new topics
+}
+
+// Document interfaces
+export interface Document {
+  id: string;
+  title: string;
+  description: string | null;
+  document_type: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string;
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  embedding_status: 'pending' | 'processing' | 'completed' | 'failed';
+  error_message: string | null;
+  tags: string[];
+  content?: string; // Only included in individual document fetch
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentsResponse {
+  documents: Document[];
+  total: number;
+}
+
+export interface DocumentUploadResponse {
+  id: string;
+  title: string;
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  embedding_status: 'pending' | 'processing' | 'completed' | 'failed';
+  message: string;
+}
+
+export interface DocumentStatusResponse {
+  document_id: string;
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed';
+  embedding_status: 'pending' | 'processing' | 'completed' | 'failed';
+  error_message: string | null;
+}
+
+export interface DocumentDeleteResponse {
+  message: string;
+}
+
+export interface GetDocumentsParams {
+  limit?: number;
+  offset?: number;
+}
+
 export interface Agent {
   name: string;
   profile: string;
   model_id?: string;
+  lm_config?: LMConfig;
+  web_search_tools?: WebSearchToolsConfig;
+  recall_tools?: RecallToolsConfig;
+  document_ids?: string[];
+  canvas_position?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface SimulationRequest {
@@ -158,20 +250,19 @@ export interface GetTemplatesParams {
 export interface Config {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   visibility: 'public' | 'private';
   parameters: {
     topic: string;
     max_iters: number;
     max_interventions_per_agent?: number;
+    agent_count?: number;
     bias: number[];
     stance: string;
-    embedding_model: string;
-    embedding_config: object;
   };
   version_number: number;
-  source_template_id?: string;
-  agents?: ConfigAgent[];
+  source_template_id?: string | null;
+  agents: ConfigAgent[];
   created_at: string;
   updated_at: string;
 }
@@ -179,15 +270,16 @@ export interface Config {
 export interface ConfigAgent {
   position: number;
   name: string;
-  background: string;
+  profile: string;
+  model_id: string;
+  lm_config?: LMConfig;
+  web_search_tools?: WebSearchToolsConfig;
+  recall_tools?: RecallToolsConfig;
+  document_ids?: string[];
   canvas_position?: {
     x: number;
     y: number;
-  };
-  snapshot: {
-    profile: string;
-    model_id: string;
-  };
+  } | null;
   created_at: string;
 }
 
@@ -224,9 +316,6 @@ export interface CreateConfigResponse {
     max_iters: number;
     bias: number[];
     stance: string;
-    embedding_model: string;
-    embedding_config: object;
-    agents: ConfigAgent[];
   };
   version_number: number;
   agents: ConfigAgent[];
@@ -243,6 +332,10 @@ export interface UpdateConfigRequest {
     name: string;
     profile: string;
     model_id?: string;
+    lm_config?: LMConfig;
+    web_search_tools?: WebSearchToolsConfig;
+    recall_tools?: RecallToolsConfig;
+    document_ids?: string[];
     canvas_position?: {
       x: number;
       y: number;
@@ -252,7 +345,6 @@ export interface UpdateConfigRequest {
   max_interventions_per_agent?: number;
   bias?: number[];
   stance?: string;
-  embedding_model?: string;
 }
 
 export interface DeleteConfigResponse {
@@ -293,6 +385,10 @@ class DebateApiService {
   // NEW v3.0 methods
   async getAvailableModels(): Promise<ModelsResponse> {
     return this.makeRequest<ModelsResponse>('/simulations/models');
+  }
+
+  async getAvailableTools(): Promise<ToolsResponse> {
+    return this.makeRequest<ToolsResponse>('/simulations/tools');
   }
 
   async createSimulation(request: SimulationRequest): Promise<SimulationCreateResponse> {
@@ -443,6 +539,72 @@ class DebateApiService {
     } catch {
       return false;
     }
+  }
+
+  // Document methods
+  async getDocuments(params?: GetDocumentsParams): Promise<DocumentsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
+    
+    const endpoint = `/documents${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest<DocumentsResponse>(endpoint);
+  }
+
+  async uploadDocument(
+    file: File, 
+    title?: string, 
+    description?: string, 
+    documentType?: string,
+    tags?: string[]
+  ): Promise<DocumentUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+
+    if (description) {
+      formData.append('description', description);
+    }
+    
+    if (documentType) {
+      formData.append('document_type', documentType);
+    }
+    
+    if (tags && tags.length > 0) {
+      formData.append('tags', tags.join(','));
+    }
+
+    // Note: We don't set Content-Type for FormData, let the browser set it with boundary
+    const response = await fetch(`${BASE_URL}/documents`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (response.status === 401) {
+      throw new Error('Authentication required');
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(errorData.detail || `Upload failed: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getDocument(documentId: string): Promise<Document> {
+    return this.makeRequest<Document>(`/documents/${documentId}`);
+  }
+
+  async deleteDocument(documentId: string): Promise<DocumentDeleteResponse> {
+    return this.makeRequest<DocumentDeleteResponse>(`/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getDocumentStatus(documentId: string): Promise<DocumentStatusResponse> {
+    return this.makeRequest<DocumentStatusResponse>(`/documents/${documentId}/status`);
   }
 }
 

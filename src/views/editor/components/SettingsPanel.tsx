@@ -1,17 +1,21 @@
 'use client';
 
-import { Agent, EditorConfig } from '@/types';
-import { ModelInfo } from '@/lib/api';
+import { Agent, EditorConfig, Node } from '@/types';
+import { ModelInfo, ToolInfo } from '@/lib/api';
 import BasePanel from './BasePanel';
-import Input from '@/components/ui/Input';
-import Textarea from '@/components/ui/Textarea';
+import { AgentConfigurationForm, GeneralSettingsForm } from './forms';
+import { ToolConfigurationRouter } from './tool-configs';
 
 interface SettingsPanelProps {
   selectedNodeId: string | null;
+  nodes: Node[];
   configuration: EditorConfig;
   availableModels: ModelInfo[];
   defaultModel: string;
   modelsLoading: boolean;
+  availableTools: ToolInfo[];
+  toolsLoading: boolean;
+  toolsError: string | null;
   onAgentUpdate: (agentId: string, updates: Partial<Agent>) => void;
   onNameUpdate: (name: string) => void;
   onDescriptionUpdate: (description: string) => void;
@@ -20,15 +24,20 @@ interface SettingsPanelProps {
   onMaxIterationsUpdate: (maxIterations: number) => void;
   onMaxInterventionsPerAgentUpdate: (maxInterventionsPerAgent: number | undefined) => void;
   onRemoveAgent: (agentId: string) => void;
+  onRemoveTool: (agentId: string, toolId: string) => void;
   onClose: () => void;
 }
 
 export default function SettingsPanel({ 
   selectedNodeId,
+  nodes,
   configuration,
   availableModels,
   defaultModel,
   modelsLoading,
+  availableTools,
+  toolsLoading,
+  toolsError,
   onAgentUpdate,
   onNameUpdate,
   onDescriptionUpdate,
@@ -37,11 +46,118 @@ export default function SettingsPanel({
   onMaxIterationsUpdate,
   onMaxInterventionsPerAgentUpdate,
   onRemoveAgent,
+  onRemoveTool,
   onClose
 }: SettingsPanelProps) {
   
   const selectedAgent = selectedNodeId ? 
     configuration.agents.find(a => a.nodeId === selectedNodeId) : null;
+    
+  const selectedNode = selectedNodeId ? 
+    nodes.find(n => n.id === selectedNodeId) : null;
+    
+  const selectedTool = selectedNode?.type === 'tool' ? selectedNode : null;
+
+  if (selectedTool) {
+    // Render tool configuration view
+    const parentAgent = selectedTool.parentAgentId 
+      ? configuration.agents.find(a => a.nodeId === selectedTool.parentAgentId)
+      : null;
+    
+    const toolInfo = availableTools.find((t: ToolInfo) => t.id === selectedTool.toolId);
+    
+    const isRecallTool = ['notes_tool', 'documents_tool'].includes(selectedTool.toolId || '');
+    const currentToolConfig = isRecallTool
+      ? parentAgent?.recall_tools?.[selectedTool.toolId as keyof typeof parentAgent.recall_tools]
+      : parentAgent?.web_search_tools?.[selectedTool.toolId as keyof typeof parentAgent.web_search_tools];
+    
+    const handleToolUpdate = (updates: any) => {
+      if (!parentAgent || !selectedTool.toolId) return;
+      
+      if (isRecallTool) {
+        const updatedTools = {
+          ...parentAgent.recall_tools,
+          [selectedTool.toolId]: {
+            ...currentToolConfig,
+            ...updates
+          }
+        };
+        
+        onAgentUpdate(parentAgent.id, {
+          recall_tools: updatedTools
+        });
+      } else {
+        const updatedTools = {
+          ...parentAgent.web_search_tools,
+          [selectedTool.toolId]: {
+            ...currentToolConfig,
+            ...updates
+          }
+        };
+        
+        onAgentUpdate(parentAgent.id, {
+          web_search_tools: updatedTools
+        });
+      }
+    };
+
+    return (
+      <BasePanel title={`Configure ${selectedTool.name || selectedTool.toolId}`}>
+        <div className="h-full flex flex-col">
+          {/* Back button */}
+          <div className="flex-shrink-0 mb-4">
+            <button 
+              onClick={onClose} 
+              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+            >
+              ← Back to general settings
+            </button>
+          </div>
+
+          {/* Tool name and agent context */}
+          <div className="flex-shrink-0 mb-6">
+            <h3 className="text-lg font-semibold text-neutral-800 mb-1">
+              {toolInfo?.name} Tool
+            </h3>
+            <p className="text-sm text-gray-600">
+              Configuring for {parentAgent?.name}
+            </p>
+          </div>
+
+          {/* Scrollable configuration content */}
+          <div className="flex-1 overflow-y-auto">
+            {parentAgent && toolInfo && (
+              <ToolConfigurationRouter
+                toolId={selectedTool.toolId}
+                toolInfo={toolInfo}
+                parentAgent={parentAgent as any}
+                currentToolConfig={currentToolConfig}
+                onEnabledToggle={(enabled) => handleToolUpdate({ enabled })}
+                onSourcesUpdate={(sources) => handleToolUpdate({ sources })}
+                onDocumentsUpdate={(docIds) => onAgentUpdate(parentAgent.id, { document_ids: docIds })}
+                onToolUpdate={handleToolUpdate}
+              />
+            )}
+          </div>
+
+          {/* Remove tool button */}
+          <div className="flex-shrink-0 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                if (parentAgent && selectedTool.toolId && window.confirm(`Are you sure you want to remove the ${toolInfo?.name} tool from ${parentAgent.name}?`)) {
+                  onRemoveTool(parentAgent.id, selectedTool.toolId);
+                  onClose();
+                }
+              }}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              Remove Tool
+            </button>
+          </div>
+        </div>
+      </BasePanel>
+    );
+  }
 
   if (selectedAgent) {
     // Render agent configuration view
@@ -73,245 +189,5 @@ export default function SettingsPanel({
         onMaxInterventionsPerAgentUpdate={onMaxInterventionsPerAgentUpdate}
       />
     </BasePanel>
-  );
-}
-
-function AgentConfigurationForm({ agent, availableModels, defaultModel, modelsLoading, onUpdate, onRemove, onClose }: {
-  agent: Agent;
-  availableModels: ModelInfo[];
-  defaultModel: string;
-  modelsLoading: boolean;
-  onUpdate: (agentId: string, updates: Partial<Agent>) => void;
-  onRemove: (agentId: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="h-full flex flex-col">
-      {/* Back button - fixed at top */}
-      <div className="flex-shrink-0 mb-4">
-        <button 
-          onClick={onClose} 
-          className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
-        >
-          ← Back to general settings
-        </button>
-      </div>
-
-      {/* Scrollable form content */}
-      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-        {/* Agent name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Agent Name
-          </label>
-          <Input
-            value={agent.name}
-            onChange={(e) => onUpdate(agent.id, { name: e.target.value })}
-            placeholder="Enter agent name"
-          />
-        </div>
-
-        {/* AI Model selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            AI Model
-          </label>
-          {modelsLoading ? (
-            <div className="text-sm text-gray-500 italic">Loading models...</div>
-          ) : (
-            <select
-              value={agent.model_id || ''}
-              onChange={(e) => onUpdate(agent.id, { model_id: e.target.value || undefined })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Use Default ({defaultModel})</option>
-              {availableModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} ({model.provider})
-                </option>
-              ))}
-            </select>
-          )}
-          {!modelsLoading && availableModels.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              {agent.model_id 
-                ? availableModels.find(m => m.id === agent.model_id)?.description 
-                : `Using default model: ${defaultModel}`
-              }
-            </p>
-          )}
-        </div>
-        
-        {/* Personality prompt - main configuration */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Personality Prompt
-          </label>
-          <Textarea
-            value={agent.personality}
-            onChange={(e) => onUpdate(agent.id, { personality: e.target.value })}
-            placeholder="Describe this agent's personality, beliefs, and debate style..."
-            rows={8}
-            className="w-full"
-          />
-        </div>
-        
-        {/* Bias slider */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Bias: {agent.bias?.toFixed(2) || '0.00'}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={agent.bias || 0}
-            onChange={(e) => onUpdate(agent.id, { bias: parseFloat(e.target.value) })}
-            className="w-full"
-          />
-        </div>
-        
-        {/* Enable/disable toggle */}
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
-            Enabled for simulation
-          </label>
-          <input
-            type="checkbox"
-            checked={agent.enabled}
-            onChange={(e) => onUpdate(agent.id, { enabled: e.target.checked })}
-            className="w-4 h-4"
-          />
-        </div>
-        
-        {/* Remove agent button */}
-        <div className="pt-4 border-t border-gray-200">
-          <button
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to remove ${agent.name}?`)) {
-                onRemove(agent.id);
-              }
-            }}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-          >
-            Remove Agent
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function GeneralSettingsForm({ configuration, onNameUpdate, onDescriptionUpdate, onSettingsUpdate, onTopicUpdate, onMaxIterationsUpdate, onMaxInterventionsPerAgentUpdate }: {
-  configuration: EditorConfig;
-  onNameUpdate: (name: string) => void;
-  onDescriptionUpdate: (description: string) => void;
-  onSettingsUpdate: (updates: Partial<EditorConfig['settings']>) => void;
-  onTopicUpdate: (topic: string) => void;
-  onMaxIterationsUpdate: (maxIterations: number) => void;
-  onMaxInterventionsPerAgentUpdate: (maxInterventionsPerAgent: number | undefined) => void;
-}) {
-  const handleMaxIterationsChange = (value: number) => {
-    onMaxIterationsUpdate(value);
-  };
-
-  const handleMaxInterventionsPerAgentChange = (value: number | undefined) => {
-    onMaxInterventionsPerAgentUpdate(value);
-  };
-
-  return (
-    <div className="h-full overflow-y-auto space-y-6 pr-2">
-
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-neutral-800">Debate Settings</h3>
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-600 mb-1">Debate Name</label>
-            <Textarea
-              value={configuration.name}
-              onChange={(e) => onNameUpdate(e.target.value)}
-              placeholder="Enter a name for this debate..."
-              rows={3}
-              className="w-full"
-            />
-
-            <label className="block text-sm text-neutral-600 mb-1">Debate Description</label>
-            <Textarea
-              value={configuration.description}
-              onChange={(e) => onDescriptionUpdate(e.target.value)}
-              placeholder="Enter a description for this debate..."
-              rows={3}
-              className="w-full"
-            />
-        </div>
-      </div>
-      
-      {/* Topic */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-neutral-800">Topic</h3>
-        <div>
-          <label className="block text-sm text-neutral-600 mb-1">Debate Topic</label>
-          <Textarea
-            value={configuration.topic}
-            onChange={(e) => onTopicUpdate(e.target.value)}
-            placeholder="Enter the topic for debate..."
-            rows={3}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      {/* Simulation Settings */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-neutral-800">Simulation</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-neutral-600">Max rounds</label>
-            <input 
-              type="number" 
-              value={configuration.maxIterations}
-              onChange={(e) => handleMaxIterationsChange(parseInt(e.target.value) || 21)}
-              className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-neutral-600">Max interventions per agent</label>
-            <input 
-              type="number" 
-              value={configuration.maxInterventionsPerAgent || ''}
-              placeholder="Auto"
-              onChange={(e) => {
-                const value = parseInt(e.target.value);
-                handleMaxInterventionsPerAgentChange(isNaN(value) ? undefined : value);
-              }}
-              className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-neutral-600">Response timeout (s)</label>
-            <input 
-              type="number" 
-              value={configuration.settings.timeout}
-              onChange={(e) => onSettingsUpdate({ timeout: parseInt(e.target.value) || 30 })}
-              className="w-16 px-2 py-1 border border-neutral-300 rounded text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Export/Import */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-neutral-800">Data</h3>
-        <div className="flex gap-2">
-          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-[#f3f3f3]">
-            Export Config
-          </button>
-          <button className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-[#f3f3f3]">
-            Import Config
-          </button>
-        </div>
-      </div>
-
-    </div>
   );
 }

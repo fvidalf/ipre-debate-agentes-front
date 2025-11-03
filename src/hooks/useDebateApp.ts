@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Tool } from '@/types';
 import { debateApi, ModelInfo } from '@/lib/api';
+import { Node } from '@/types';
 import { useEditorConfig } from './useEditorConfig';
 import { useCanvasState } from './useCanvasState';
 import { useAgentFactory } from './useAgentFactory';
 import { useSimulationControl } from './useSimulationControl';
 import { useUIState } from './useUIState';
+import { useTools } from './useTools';
 
 export function useDebateApp(configId?: string) {
   // External data state (models from API)
@@ -24,6 +25,7 @@ export function useDebateApp(configId?: string) {
   const agentFactory = useAgentFactory();
   const simulationControl = useSimulationControl(configId);
   const uiState = useUIState();
+  const toolsState = useTools();
 
   // Load agents when loadedAgents data becomes available
   useEffect(() => {
@@ -39,21 +41,47 @@ export function useDebateApp(configId?: string) {
     existingAgents.forEach(agent => {
       debateConfig.removeAgent(agent.id);
       canvasState.removeNode(agent.nodeId);
+      // Also remove all tool nodes for this agent
+      canvasState.removeToolNodesForAgent(agent.nodeId);
     });
     
     // Load agents from config
     const centerNode = canvasState.getCenterNode();
     if (centerNode) {
-      agentsToProcess.forEach((configAgent, index) => {
+      // Process agents sequentially to avoid timing issues
+      for (const [index, configAgent] of agentsToProcess.entries()) {
         const { agent, node } = agentFactory.createAgentFromConfigData(
           configAgent, 
           agentsToProcess.length,
           centerNode
         );
         
+        // First, add the agent node to canvas and agent to config
         canvasState.addNode(node);
         debateConfig.addAgent(agent);
-      });
+        
+        // Then, create tool nodes if agent has tools configured
+        // This must happen AFTER the agent node is added to canvas
+        const allToolsConfig = [
+          ...(agent.web_search_tools ? Object.entries(agent.web_search_tools) : []),
+          ...(agent.recall_tools ? Object.entries(agent.recall_tools) : [])
+        ];
+
+        allToolsConfig.forEach(([toolId, toolConfig]) => {
+          if (toolConfig && toolConfig.enabled) {
+            // Use stored canvas position if available, otherwise addToolNode will calculate
+            const position = ('canvas_position' in toolConfig && toolConfig.canvas_position) 
+              ? toolConfig.canvas_position 
+              : undefined;
+            
+            // Get proper tool name from API
+            const toolInfo = toolsState.tools.find(t => t.id === toolId);
+            const toolName = toolInfo?.name;
+            console.log('🎯 About to create tool node:', { agentNodeId: agent.nodeId, toolId, toolName, position });
+            canvasState.addToolNode(agent.nodeId, toolId, toolName, position);
+          }
+        });
+      }
       
       // Clear the loaded agents to prevent reprocessing
       debateConfig.clearLoadedAgents();
@@ -85,34 +113,6 @@ export function useDebateApp(configId?: string) {
     fetchModels();
   }, []);
 
-  // Static tools configuration
-  const tools = useMemo<Tool[]>(() => [
-    {
-      id: 'x-profile',
-      title: 'X profile',
-      subtitle: 'Link an X profile to base personality on and reference',
-      icon: '✂️',
-    },
-    {
-      id: 'documents',
-      title: 'Documents',
-      subtitle: 'Load in files to use them as context',
-      icon: '🗂️',
-    },
-    {
-      id: 'news-access',
-      title: 'News access',
-      subtitle: 'Look for news to support claims',
-      icon: '🌐',
-    },
-    {
-      id: 'past-debates',
-      title: 'Past debates',
-      subtitle: 'Recall past conversations an agent has been a part of',
-      icon: '🗄️',
-    },
-  ], []);
-
   // Enhanced node click handler that manages both canvas and agent state
   const handleNodeClick = useCallback((nodeId: string) => {
     canvasState.handleNodeClick(nodeId);
@@ -122,9 +122,17 @@ export function useDebateApp(configId?: string) {
       return;
     }
     
+    // Check if this is a tool node
+    const clickedNode = canvasState.getNode(nodeId);
+    if (clickedNode?.type === 'tool') {
+      // For tool nodes, show tool configuration settings
+      uiState.setActiveOption('settings');
+      return;
+    }
+    
     uiState.setActiveOption('settings'); // Switch to settings panel
     
-    // Create agent if it doesn't exist for this node (legacy support)
+    // For agent nodes, verify the agent exists
     const existingAgent = debateConfig.configuration.agents.find(a => a.nodeId === nodeId);
     if (!existingAgent) {
       // This shouldn't happen in the new architecture, but keeping for safety
@@ -202,10 +210,126 @@ export function useDebateApp(configId?: string) {
     }
   }, [debateConfig, canvasState, uiState]);
 
-  // Tool toggle handler
+    // Tool toggle handler
   const handleToolToggle = useCallback((toolId: string) => {
-    // TODO: Implement tool activation/deactivation logic
+    console.log('Tool toggle:', toolId);
   }, []);
+
+  // Tool drop handler - adds tool to agent and creates tool node
+  const handleToolDrop = useCallback((agentId: string, toolId: string) => {
+    console.log('🔧 Tool dropped:', { agentId, toolId });
+    
+    // Find agent by nodeId (canvas node ID)
+    const agent = debateConfig.configuration.agents.find(a => a.nodeId === agentId);
+    console.log('🔍 Agent lookup by nodeId result:', agent ? `FOUND: ${agent.name}` : 'NOT_FOUND');
+    console.log('🔍 Available agents:', debateConfig.configuration.agents.map(a => ({ id: a.id, nodeId: a.nodeId, name: a.name })));
+    console.log('🔍 Tools available:', toolsState.tools.map(t => ({ id: t.id, name: t.name })));
+    console.log(' debateConfig:', debateConfig);
+    
+    if (!agent) {
+      console.error('❌ Agent not found in config by nodeId:', agentId);
+      return;
+    }
+
+    const toolCategory = toolsState.getToolCategory(toolId);
+    
+    if (toolCategory === null) {
+      console.error('❌ Tool category not found for:', toolId);
+      return;
+    }
+    
+    if (toolCategory === 'recall') {
+      // Handle recall tools
+      const currentTools = agent.recall_tools || {};
+      const toolKey = toolId as keyof typeof currentTools;
+      console.log('🔍 Recall tool check:', { toolKey, currentTools, enabled: currentTools[toolKey]?.enabled });
+      
+      if (currentTools[toolKey]?.enabled) {
+        console.log('⚠️ Recall tool already enabled for this agent');
+        return;
+      }
+
+      // Enable the recall tool for the agent
+      const updatedTools = {
+        ...currentTools,
+        [toolKey]: { enabled: true }
+      };
+
+      debateConfig.updateAgent(agent.id, {
+        recall_tools: updatedTools
+      });
+    } else if (toolCategory === 'web_search') {
+      // Handle web search tools
+      const currentTools = agent.web_search_tools || {};
+      const toolKey = toolId as keyof typeof currentTools;
+      console.log('🔍 Web search tool check:', { toolKey, currentTools, enabled: currentTools[toolKey]?.enabled });
+      
+      if (currentTools[toolKey]?.enabled) {
+        console.log('⚠️ Web search tool already enabled for this agent');
+        return;
+      }
+
+      // Enable the web search tool for the agent
+      const updatedTools = {
+        ...currentTools,
+        [toolKey]: { enabled: true }
+      };
+
+      debateConfig.updateAgent(agent.id, {
+        web_search_tools: updatedTools
+      });
+    }
+
+    console.log('✅ Proceeding to create visual node');
+
+    // Add tool node to canvas with proper name from API
+    const toolInfo = toolsState.tools.find(t => t.id === toolId);
+    const toolName = toolInfo?.name;
+    console.log('🎨 About to call addToolNode:', { agentId, toolId, toolName });
+    canvasState.addToolNode(agentId, toolId, toolName);
+    console.log('✅ addToolNode call completed');
+  }, [debateConfig, canvasState, toolsState.recallTools, toolsState.webSearchTools]);
+
+  // Tool removal handler - removes tool from both agent config and canvas
+  const handleRemoveTool = useCallback((agentId: string, toolId: string) => {
+    const agent = debateConfig.getAgent(agentId);
+    if (!agent) return;
+
+    // Get the tool category using the centralized lookup
+    const toolCategory = toolsState.getToolCategory(toolId);
+
+    if (toolCategory === null) {
+      console.error('❌ Tool category not found for:', toolId);
+      return;
+    }
+
+    if (toolCategory === 'recall') {
+      // Remove recall tool from agent configuration
+      debateConfig.updateAgent(agentId, {
+        recall_tools: {
+          ...agent.recall_tools,
+          [toolId]: { enabled: false }
+        }
+      });
+    } else {
+      // Remove web search tool from agent configuration
+      debateConfig.updateAgent(agentId, {
+        web_search_tools: {
+          ...agent.web_search_tools,
+          [toolId]: { enabled: false }
+        }
+      });
+    }
+
+    // Remove tool node from canvas
+    canvasState.removeToolNode(agent.nodeId, toolId);
+
+    // Clear selection if this was the selected tool node
+    const toolNodeId = `tool-${agent.nodeId}-${toolId}`;
+    if (canvasState.selectedNodeId === toolNodeId) {
+      canvasState.setSelectedNodeId(null);
+    }
+  }, [debateConfig, canvasState, toolsState.recallTools, toolsState.webSearchTools]);
 
   // Compute highlighted node based on UI state
   const highlightedNodeId = useMemo(() => {
@@ -246,7 +370,7 @@ export function useDebateApp(configId?: string) {
     // Simulation Control
     isRunning: simulationControl.isRunning,
     isSaving: simulationControl.isSaving,
-    handleRun: () => simulationControl.handleRun(debateConfig.configuration),
+    handleRun: () => simulationControl.handleRun(debateConfig.configuration, canvasState.nodes),
     handleSave: () => simulationControl.handleSave(debateConfig.configuration, canvasState.nodes),
     canSave: simulationControl.canSave(debateConfig.hasAgents()),
     
@@ -258,7 +382,11 @@ export function useDebateApp(configId?: string) {
     configLoadError: debateConfig.loadError,
     
     // Tools
-    tools,
+    availableTools: toolsState.tools,
+    toolsLoading: toolsState.isLoading,
+    toolsError: toolsState.error,
     handleToolToggle,
+    handleToolDrop,
+    handleRemoveTool,
   };
 }

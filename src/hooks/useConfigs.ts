@@ -33,7 +33,7 @@ export function useConfigs(): UseConfigsReturn {
       setConfigs(response.configs);
     } catch (err) {
       console.error('Error fetching configs:', err);
-      if (err instanceof Error && (err as any).status === 401) {
+      if (err instanceof Error && (err as Error & { status?: number }).status === 401) {
         // Auth error - clear local state
         setConfigs([]);
         setSelectedConfigId(null);
@@ -55,7 +55,7 @@ export function useConfigs(): UseConfigsReturn {
       setSelectedConfigRuns(response.runs);
     } catch (err) {
       console.error('Error fetching config runs:', err);
-      if (err instanceof Error && (err as any).status === 401) {
+      if (err instanceof Error && (err as Error & { status?: number }).status === 401) {
         // Auth error - clear runs state
         setSelectedConfigRuns([]);
       } else {

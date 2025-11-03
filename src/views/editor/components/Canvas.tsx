@@ -2,6 +2,7 @@
 
 import CanvasRenderer from '@/components/canvas/CanvasRenderer';
 import { useInteractiveCanvas } from '@/hooks/useCanvasBehavior';
+import { useDragDrop } from '@/hooks/useDragDrop';
 import { Node } from '@/types';
 
 interface CanvasProps {
@@ -16,6 +17,7 @@ interface CanvasProps {
   isRunning?: boolean;
   isSaving?: boolean;
   apiConnected?: boolean | null;
+  onToolDrop?: (agentId: string, toolId: string) => void;
 }
 
 export default function Canvas({ 
@@ -29,8 +31,11 @@ export default function Canvas({
   canSave = false, 
   isRunning = false,
   isSaving = false,
-  apiConnected = null 
+  apiConnected = null,
+  onToolDrop
 }: CanvasProps) {
+  
+  const { dragState, endDrag, updateDragPosition } = useDragDrop();
   
   // Use the interactive canvas behavior hook
   const interactiveProps = useInteractiveCanvas({
@@ -39,9 +44,115 @@ export default function Canvas({
     onCanvasClick
   });
 
+  // Handle tool drop detection
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (dragState.isDragging) {
+      updateDragPosition({ x: e.clientX, y: e.clientY });
+      // Don't allow node movement when dragging tools
+      return;
+    }
+    interactiveProps.onMouseMove?.(e);
+  };
+
+  const handleMouseUp = () => {
+    if (dragState.isDragging && dragState.draggedTool) {
+      // Detect drop anywhere on mouse up
+      console.log('🔧 Tool drop detected on mouse up');
+      
+      const canvas = interactiveProps.canvasRef?.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const canvasX = ((dragState.dragPosition.x - rect.left) / rect.width) * 100;
+        const canvasY = ((dragState.dragPosition.y - rect.top) / rect.height) * 100;
+        
+        console.log('Drop position:', { x: canvasX, y: canvasY });
+        
+        // Find peer agent nodes near drop position (exclude center node)
+        const agentNodes = nodes.filter(n => n.type === 'peer');
+        console.log('Available peer nodes:', agentNodes.map(n => ({ id: n.id, name: n.name, x: n.x, y: n.y })));
+        
+        const dropTarget = agentNodes.find(node => {
+          const distance = Math.sqrt(
+            Math.pow(node.x - canvasX, 2) + Math.pow(node.y - canvasY, 2)
+          );
+          console.log(`Distance to ${node.name || node.id}:`, distance);
+          return distance < 8; // 8% tolerance for drop
+        });
+        
+        if (dropTarget && onToolDrop) {
+          console.log('🎯 Tool dropped on agent:', dropTarget.name || dropTarget.id);
+          onToolDrop(dropTarget.id, dragState.draggedTool.id);
+        } else {
+          console.log('❌ No valid drop target found');
+        }
+      }
+      endDrag();
+    } else {
+      interactiveProps.onMouseUp?.();
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (dragState.isDragging) {
+      endDrag();
+    } else {
+      interactiveProps.onMouseLeave?.();
+    }
+  };
+
+  // Handle node mouse down - prevent when tool dragging
+  const handleNodeMouseDown = (nodeId: string, e: React.MouseEvent) => {
+    if (dragState.isDragging) {
+      // Don't allow node dragging when tool is being dragged
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    // Call the original node mouse down handler
+    interactiveProps.onNodeMouseDown?.(nodeId, e);
+  };
+
+  // Handle canvas click to detect drops
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (dragState.isDragging && dragState.draggedTool) {
+      console.log('🔧 Canvas click during drag - drop will be handled by mouseUp');
+      // Drop detection is now handled by handleMouseUp
+    } else {
+      interactiveProps.onCanvasClick?.(e);
+    }
+  };
+
+  // Custom node renderer to add drop zone highlighting
+  const renderNode = (node: Node, defaultNode: React.ReactNode) => {
+    // Don't modify the DOM structure - just return the default node
+    // Drop zone indicators will be rendered separately
+    return defaultNode;
+  };
+
   // Render the action buttons overlay
   const renderOverlay = () => (
-    <div className="absolute right-5 bottom-4 flex gap-3">
+    <>
+      {/* Drop zone indicators - rendered as overlay without affecting node positioning */}
+      {dragState.isDragging && nodes.map(node => {
+        const isPeerNode = node.type === 'peer'; // Only peer nodes can accept tools
+        if (!isPeerNode) return null;
+        
+        return (
+          <div 
+            key={`drop-zone-${node.id}`}
+            className="absolute rounded-2xl border-4 border-dashed border-purple-400 bg-purple-50/20 pointer-events-none animate-pulse"
+            style={{
+              left: `${node.x}%`,
+              top: `${node.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: '120px',
+              height: '120px',
+            }}
+          />
+        );
+      })}
+      
+      <div className="absolute right-5 bottom-4 flex gap-3">
       {/* API Status Indicator */}
       {apiConnected !== null && (
         <div className={`
@@ -104,6 +215,7 @@ export default function Canvas({
         )}
       </button>
     </div>
+    </>
   );
 
   return (
@@ -118,12 +230,13 @@ export default function Canvas({
           className="overflow-hidden rounded-3xl h-full"
           containerClassName='h-full'
           renderOverlay={renderOverlay}
-          onNodeMouseDown={interactiveProps.onNodeMouseDown}
+          renderNode={renderNode}
+          onNodeMouseDown={handleNodeMouseDown}
           onNodeClick={interactiveProps.onNodeClick}
-          onCanvasClick={interactiveProps.onCanvasClick}
-          onMouseMove={interactiveProps.onMouseMove}
-          onMouseUp={interactiveProps.onMouseUp}
-          onMouseLeave={interactiveProps.onMouseLeave}
+          onCanvasClick={handleCanvasClick}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
         />
       </div>
     </section>

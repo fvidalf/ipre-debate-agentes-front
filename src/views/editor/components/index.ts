@@ -4,3 +4,4 @@ export { default as BasePanel } from './BasePanel';
 export { default as ToolsPanel } from './ToolsPanel';
 export { default as AgentsPanel } from './AgentsPanel';
 export { default as SettingsPanel } from './SettingsPanel';
+export { default as DragOverlay } from './DragOverlay';

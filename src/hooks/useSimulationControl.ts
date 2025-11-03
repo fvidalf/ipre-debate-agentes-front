@@ -2,14 +2,14 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { EditorConfig, Node } from '@/types';
+import { EditorConfig, Node, Agent } from '@/types';
 import { debateApi, SimulationRequest } from '@/lib/api';
-import { agentsToConfigUpdate } from '@/lib/configUtils';
+import { agentsToApiFormat } from '@/lib/configUtils';
 
 interface UseSimulationControlReturn {
   isRunning: boolean;
   isSaving: boolean;
-  handleRun: (configuration: EditorConfig) => Promise<void>;
+  handleRun: (configuration: EditorConfig, nodes: Node[]) => Promise<void>;
   handleSave: (configuration: EditorConfig, nodes: Node[]) => Promise<void>;
   canSave: (hasAgents: boolean) => boolean;
 }
@@ -19,7 +19,7 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleRun = useCallback(async (configuration: EditorConfig) => {
+  const handleRun = useCallback(async (configuration: EditorConfig, nodes: Node[]) => {
     console.log('Running simulation...');
     setIsRunning(true);
 
@@ -43,14 +43,12 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
         return;
       }
 
-      // Build simulation request using the baked agent state
+      // Build simulation request using the same agent conversion function as config updates
+      const apiAgents = agentsToApiFormat(enabledAgents, nodes);
+      
       const simulationRequest: SimulationRequest = {
         topic: configuration.topic,
-        agents: enabledAgents.map(a => ({
-          name: a.name,
-          profile: a.personality, // personality -> profile
-          model_id: a.model_id || undefined
-        })),
+        agents: apiAgents,
         max_iters: configuration.maxIterations,
         max_interventions_per_agent: configuration.maxInterventionsPerAgent,
         bias: enabledAgents.map(a => a.bias || 0),
@@ -58,6 +56,10 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
         // Include config_id if we're editing an existing config
         config_id: configId,
       };
+
+      // Log the full request to verify it includes tools
+      console.log('Full simulation request:', simulationRequest);
+      console.log('Agents with tools:', apiAgents);
 
       // Create and start simulation
       console.log('Creating and starting simulation...');
@@ -95,15 +97,15 @@ export function useSimulationControl(configId?: string): UseSimulationControlRet
         topic: configuration.topic,
         name: configuration.name,
         description: configuration.description,
-        agents: agentsToConfigUpdate(enabledAgents, nodes),
+        agents: agentsToApiFormat(enabledAgents, nodes),
         max_iters: configuration.maxIterations,
         max_interventions_per_agent: configuration.maxInterventionsPerAgent,
         bias: enabledAgents.map(a => a.bias || 0),
         stance: "neutral" // Could be configurable in the future
       };
 
-      // Log agentsToConfigUpdate result
-      console.log('agentsToConfigUpdate result:', updateRequest.agents);
+      // Log agentsToApiFormat result
+      console.log('agentsToApiFormat result:', updateRequest.agents);
 
       await debateApi.updateConfig(configId, updateRequest);
       console.log('Configuration saved successfully');
