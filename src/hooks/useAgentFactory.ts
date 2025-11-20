@@ -190,6 +190,9 @@ export function useAgentFactory(): UseAgentFactoryReturn {
       lm_config: configAgent.lm_config,
       web_search_tools: configAgent.web_search_tools,
       recall_tools: configAgent.recall_tools,
+      fact_check_tools: configAgent.fact_check_tools,
+      contrast_tools: configAgent.contrast_tools,
+      synthesis_tools: configAgent.synthesis_tools,
       document_ids: configAgent.document_ids
     };
 

@@ -5,6 +5,12 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { debateApi, SimulationStatusResponse, VoteResponse, AnalyticsType, AnalyticsResponse, Config } from '@/lib/api';
 import { SimulationLayout } from '@/views/simulation';
 
+const TERMINAL_SIMULATION_STATUSES = new Set<SimulationStatusResponse['status']>([
+  'finished',
+  'failed',
+  'stopped',
+]);
+
 function SimulationPageContent() {
   const searchParams = useSearchParams();
   const simulationId = searchParams?.get('id');
@@ -19,7 +25,7 @@ function SimulationPageContent() {
   const [configLoading, setConfigLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasPollingError, setHasPollingError] = useState(false);
   const [selectedViz, setSelectedViz] = useState<AnalyticsType | null>(null);
 
@@ -35,6 +41,11 @@ function SimulationPageContent() {
     } finally {
       setConfigLoading(false);
     }
+  }, []);
+
+  const isTerminalStatus = useCallback((status?: SimulationStatusResponse | null) => {
+    if (!status) return true;
+    return status.is_finished || TERMINAL_SIMULATION_STATUSES.has(status.status);
   }, []);
 
   // Poll for simulation status
@@ -62,26 +73,14 @@ function SimulationPageContent() {
     }
   }, [configSnapshot, configLoading, fetchConfigSnapshot]); // Add dependencies
 
-  // Start polling
-  const startPolling = useCallback((id: string) => {
-    // Clear any existing interval
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    const interval = setInterval(async () => {
-      const status = await pollSimulationStatus(id);
-      
-      // Stop polling when finished, failed, or had polling error
-      if (status?.is_finished || status === null) {
-        clearInterval(interval);
-        setPollingInterval(null);
+  const clearPollingInterval = useCallback(() => {
+    setPollingInterval(prev => {
+      if (prev) {
+        clearInterval(prev);
       }
-    }, 2000); // Poll every 2 seconds
-
-    setPollingInterval(interval);
-    return interval;
-  }, []); // Remove dependencies to prevent recreation
+      return null;
+    });
+  }, []);
 
   // Stop simulation
   const handleStopSimulation = async () => {
@@ -131,6 +130,28 @@ function SimulationPageContent() {
       setAnalyticsLoading(false);
     }
   }, []);
+
+  // Start polling
+  const startPolling = useCallback((id: string) => {
+    clearPollingInterval();
+
+    const interval = setInterval(async () => {
+      const status = await pollSimulationStatus(id);
+
+      if (isTerminalStatus(status)) {
+        clearInterval(interval);
+        setPollingInterval(null);
+
+        if (status && status.status === 'finished') {
+          fetchExistingVotes(id);
+          fetchExistingAnalytics(id);
+        }
+      }
+    }, 2000); // Poll every 2 seconds
+
+    setPollingInterval(interval);
+    return interval;
+  }, [clearPollingInterval, pollSimulationStatus, isTerminalStatus, fetchExistingVotes, fetchExistingAnalytics]);
 
   // Vote simulation
   const handleVoteSimulation = async () => {
@@ -190,12 +211,12 @@ function SimulationPageContent() {
         setInitialLoading(false);
         
         // Start polling if simulation is still running
-        if (status && !status.is_finished) {
+        if (status && !isTerminalStatus(status)) {
           startPolling(simulationId);
         }
         
         // Fetch existing votes if simulation is finished
-        if (status && status.is_finished) {
+        if (status && status.status === 'finished') {
           fetchExistingVotes(simulationId);
           fetchExistingAnalytics(simulationId);
         }
@@ -207,11 +228,9 @@ function SimulationPageContent() {
 
     // Cleanup on unmount
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
+      clearPollingInterval();
     };
-  }, [simulationId, fetchExistingVotes]); // Add fetchExistingVotes dependency
+  }, [simulationId, fetchExistingVotes, fetchExistingAnalytics, pollSimulationStatus, startPolling, isTerminalStatus, clearPollingInterval]);
 
   // Show error screen only if there's an error and no simulation data
   if (error && !simulationStatus) {

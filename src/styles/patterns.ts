@@ -125,6 +125,9 @@ export const styleGuide = {
       google_ai_tool: "#8B5CF6", // Purple
       documents_tool: "#F59E0B", // Amber
       notes_tool: "#EC4899", // Pink
+      fact_check_tool: "#14B8A6", // Teal
+      contrast_tool: "#F87171", // Light red
+      synthesis_tool: "#C084FC", // Lavender
     },
   },
 } as const;

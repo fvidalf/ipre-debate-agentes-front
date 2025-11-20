@@ -1,6 +1,17 @@
 import { AgentTemplate } from '@/lib/api';
 import { Agent } from '@/types';
-import { BookOpen, Newspaper, Globe, Sparkles, StickyNote, FileText, Wrench } from 'lucide-react';
+import {
+  BookOpen,
+  Newspaper,
+  Globe,
+  Sparkles,
+  StickyNote,
+  FileText,
+  Wrench,
+  ShieldCheck,
+  Scale,
+  Lightbulb,
+} from 'lucide-react';
 
 // Utility function to generate unique IDs (copied from useDebateApp for consistency)
 const generateUniqueId = () => Math.random().toString(36).substr(2, 9);
@@ -13,12 +24,18 @@ const TOOL_ICON_MAP = {
   'Sparkles': Sparkles,
   'StickyNote': StickyNote,
   'FileText': FileText,
+  'ShieldCheck': ShieldCheck,
+  'Scale': Scale,
+  'Lightbulb': Lightbulb,
   'wikipedia_tool': BookOpen,
   'news_tool': Newspaper,
   'pages_tool': Globe,
   'google_ai_tool': Sparkles,
   'notes_tool': StickyNote,
   'documents_tool': FileText,
+  'fact_check_tool': ShieldCheck,
+  'contrast_tool': Scale,
+  'synthesis_tool': Lightbulb,
 };
 
 // Get icon component for a tool by icon name or tool ID

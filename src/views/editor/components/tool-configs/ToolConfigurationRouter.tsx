@@ -4,6 +4,10 @@ import { Agent, ToolInfo } from '@/lib/api';
 import WebSearchToolConfiguration from './WebSearchToolConfiguration';
 import NotesToolConfiguration from './NotesToolConfiguration';
 import DocumentsToolConfiguration from './DocumentsToolConfiguration';
+import FactCheckToolConfiguration from './FactCheckToolConfiguration';
+import ContrastToolConfiguration from './ContrastToolConfiguration';
+import SynthesisToolConfiguration from './SynthesisToolConfiguration';
+import { agentHasSupportingTools } from '@/lib/toolUtils';
 
 interface ToolConfigurationRouterProps {
   toolId: string | undefined;
@@ -50,6 +54,38 @@ export default function ToolConfigurationRouter({
         currentToolConfig={currentToolConfig}
         onEnabledToggle={onEnabledToggle}
         onDocumentsUpdate={(docIds) => onDocumentsUpdate?.(docIds)}
+        toolInfo={toolInfo}
+      />
+    );
+  }
+
+  if (toolId === 'fact_check_tool') {
+    const canEnableFactCheck = agentHasSupportingTools(parentAgent);
+    return (
+      <FactCheckToolConfiguration
+        currentToolConfig={currentToolConfig}
+        onEnabledToggle={onEnabledToggle}
+        toolInfo={toolInfo}
+        canEnable={canEnableFactCheck}
+      />
+    );
+  }
+
+  if (toolId === 'contrast_tool') {
+    return (
+      <ContrastToolConfiguration
+        currentToolConfig={currentToolConfig}
+        onEnabledToggle={onEnabledToggle}
+        toolInfo={toolInfo}
+      />
+    );
+  }
+
+  if (toolId === 'synthesis_tool') {
+    return (
+      <SynthesisToolConfiguration
+        currentToolConfig={currentToolConfig}
+        onEnabledToggle={onEnabledToggle}
         toolInfo={toolInfo}
       />
     );

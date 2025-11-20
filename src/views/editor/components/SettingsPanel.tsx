@@ -5,6 +5,7 @@ import { ModelInfo, ToolInfo } from '@/lib/api';
 import BasePanel from './BasePanel';
 import { AgentConfigurationForm, GeneralSettingsForm } from './forms';
 import { ToolConfigurationRouter } from './tool-configs';
+import { agentHasSupportingTools, hasEnabledToolGroup } from '@/lib/toolUtils';
 
 interface SettingsPanelProps {
   selectedNodeId: string | null;
@@ -67,9 +68,32 @@ export default function SettingsPanel({
     const toolInfo = availableTools.find((t: ToolInfo) => t.id === selectedTool.toolId);
     
     const isRecallTool = ['notes_tool', 'documents_tool'].includes(selectedTool.toolId || '');
-    const currentToolConfig = isRecallTool
-      ? parentAgent?.recall_tools?.[selectedTool.toolId as keyof typeof parentAgent.recall_tools]
-      : parentAgent?.web_search_tools?.[selectedTool.toolId as keyof typeof parentAgent.web_search_tools];
+    const isFactCheckTool = selectedTool.toolId === 'fact_check_tool';
+    const isContrastTool = selectedTool.toolId === 'contrast_tool';
+    const isSynthesisTool = selectedTool.toolId === 'synthesis_tool';
+    const enforceFactCheckDependencies = (overrides?: { web?: Agent['web_search_tools']; recall?: Agent['recall_tools'] }) => {
+      if (!parentAgent || !hasEnabledToolGroup(parentAgent.fact_check_tools)) return;
+      if (agentHasSupportingTools(parentAgent, overrides)) return;
+      Object.keys(parentAgent.fact_check_tools || {}).forEach((factToolId) => {
+        onRemoveTool(parentAgent.id, factToolId);
+      });
+    };
+    const currentToolConfig = (() => {
+      if (!parentAgent || !selectedTool.toolId) return null;
+
+      switch (true) {
+        case isRecallTool:
+          return parentAgent.recall_tools?.[selectedTool.toolId as keyof typeof parentAgent.recall_tools];
+        case isFactCheckTool:
+          return parentAgent.fact_check_tools?.[selectedTool.toolId as keyof typeof parentAgent.fact_check_tools];
+        case isContrastTool:
+          return parentAgent.contrast_tools?.[selectedTool.toolId as keyof typeof parentAgent.contrast_tools];
+        case isSynthesisTool:
+          return parentAgent.synthesis_tools?.[selectedTool.toolId as keyof typeof parentAgent.synthesis_tools];
+        default:
+          return parentAgent.web_search_tools?.[selectedTool.toolId as keyof typeof parentAgent.web_search_tools];
+      }
+    })();
     
     const handleToolUpdate = (updates: any) => {
       if (!parentAgent || !selectedTool.toolId) return;
@@ -86,6 +110,51 @@ export default function SettingsPanel({
         onAgentUpdate(parentAgent.id, {
           recall_tools: updatedTools
         });
+
+        if (updates?.enabled === false) {
+          enforceFactCheckDependencies({ recall: updatedTools });
+        }
+      } else if (isFactCheckTool) {
+        if (updates?.enabled && !agentHasSupportingTools(parentAgent)) {
+          alert('Enable at least one web search or recall tool before using fact-checking.');
+          return;
+        }
+
+        const updatedTools = {
+          ...parentAgent.fact_check_tools,
+          [selectedTool.toolId]: {
+            ...currentToolConfig,
+            ...updates
+          }
+        };
+
+        onAgentUpdate(parentAgent.id, {
+          fact_check_tools: updatedTools
+        });
+      } else if (isContrastTool) {
+        const updatedTools = {
+          ...parentAgent.contrast_tools,
+          [selectedTool.toolId]: {
+            ...currentToolConfig,
+            ...updates
+          }
+        };
+
+        onAgentUpdate(parentAgent.id, {
+          contrast_tools: updatedTools
+        });
+      } else if (isSynthesisTool) {
+        const updatedTools = {
+          ...parentAgent.synthesis_tools,
+          [selectedTool.toolId]: {
+            ...currentToolConfig,
+            ...updates
+          }
+        };
+
+        onAgentUpdate(parentAgent.id, {
+          synthesis_tools: updatedTools
+        });
       } else {
         const updatedTools = {
           ...parentAgent.web_search_tools,
@@ -98,6 +167,10 @@ export default function SettingsPanel({
         onAgentUpdate(parentAgent.id, {
           web_search_tools: updatedTools
         });
+
+        if (updates?.enabled === false) {
+          enforceFactCheckDependencies({ web: updatedTools });
+        }
       }
     };
 

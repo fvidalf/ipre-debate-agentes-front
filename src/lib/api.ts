@@ -1,6 +1,6 @@
 const BASE_URL = 'http://localhost:8000';
 
-import { WebSearchToolsConfig, RecallToolsConfig } from '@/types';
+import { WebSearchToolsConfig, RecallToolsConfig, FactCheckToolsConfig, ContrastToolsConfig, SynthesisToolsConfig } from '@/types';
 
 // Auth interfaces
 export interface LoginRequest {
@@ -53,6 +53,9 @@ export interface ToolsResponse {
   tools: {
     web_search_tools: ToolInfo[];
     recall_tools: ToolInfo[];
+    fact_check_tools: ToolInfo[];
+    contrast_tools: ToolInfo[];
+    synthesis_tools: ToolInfo[];
   };
 }
 
@@ -118,6 +121,9 @@ export interface Agent {
   lm_config?: LMConfig;
   web_search_tools?: WebSearchToolsConfig;
   recall_tools?: RecallToolsConfig;
+  fact_check_tools?: FactCheckToolsConfig;
+  contrast_tools?: ContrastToolsConfig;
+  synthesis_tools?: SynthesisToolsConfig;
   document_ids?: string[];
   canvas_position?: {
     x: number;
@@ -251,7 +257,6 @@ export interface Config {
   id: string;
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
   parameters: {
     topic: string;
     max_iters: number;
@@ -261,7 +266,6 @@ export interface Config {
     stance: string;
   };
   version_number: number;
-  source_template_id?: string | null;
   agents: ConfigAgent[];
   created_at: string;
   updated_at: string;
@@ -275,6 +279,9 @@ export interface ConfigAgent {
   lm_config?: LMConfig;
   web_search_tools?: WebSearchToolsConfig;
   recall_tools?: RecallToolsConfig;
+  fact_check_tools?: FactCheckToolsConfig;
+  contrast_tools?: ContrastToolsConfig;
+  synthesis_tools?: SynthesisToolsConfig;
   document_ids?: string[];
   canvas_position?: {
     x: number;
@@ -310,7 +317,6 @@ export interface CreateConfigResponse {
   id: string;
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
   parameters: {
     topic: string;
     max_iters: number;
@@ -319,7 +325,6 @@ export interface CreateConfigResponse {
   };
   version_number: number;
   agents: ConfigAgent[];
-  source_template_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -335,6 +340,9 @@ export interface UpdateConfigRequest {
     lm_config?: LMConfig;
     web_search_tools?: WebSearchToolsConfig;
     recall_tools?: RecallToolsConfig;
+    fact_check_tools?: FactCheckToolsConfig;
+    contrast_tools?: ContrastToolsConfig;
+    synthesis_tools?: SynthesisToolsConfig;
     document_ids?: string[];
     canvas_position?: {
       x: number;

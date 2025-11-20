@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { debateApi, ModelInfo } from '@/lib/api';
-import { Node } from '@/types';
+import type { Agent } from '@/types';
+import { agentHasSupportingTools, hasEnabledToolGroup } from '@/lib/toolUtils';
 import { useEditorConfig } from './useEditorConfig';
 import { useCanvasState } from './useCanvasState';
 import { useAgentFactory } from './useAgentFactory';
@@ -26,6 +27,31 @@ export function useDebateApp(configId?: string) {
   const simulationControl = useSimulationControl(configId);
   const uiState = useUIState();
   const toolsState = useTools();
+  const {
+    tools: availableToolInfos,
+    getToolCategory,
+  } = toolsState;
+
+  const disableFactCheckForAgent = useCallback((agent: Agent) => {
+    if (!agent.fact_check_tools || !hasEnabledToolGroup(agent.fact_check_tools)) {
+      return;
+    }
+
+    const disabledFactTools = Object.fromEntries(
+      Object.entries(agent.fact_check_tools).map(([toolId, toolConfig]) => [
+        toolId,
+        toolConfig ? { ...toolConfig, enabled: false } : toolConfig
+      ])
+    );
+
+    debateConfig.updateAgent(agent.id, {
+      fact_check_tools: disabledFactTools
+    });
+
+    Object.keys(agent.fact_check_tools).forEach((factToolId) => {
+      canvasState.removeToolNode(agent.nodeId, factToolId);
+    });
+  }, [debateConfig, canvasState]);
 
   // Load agents when loadedAgents data becomes available
   useEffect(() => {
@@ -64,7 +90,10 @@ export function useDebateApp(configId?: string) {
         // This must happen AFTER the agent node is added to canvas
         const allToolsConfig = [
           ...(agent.web_search_tools ? Object.entries(agent.web_search_tools) : []),
-          ...(agent.recall_tools ? Object.entries(agent.recall_tools) : [])
+          ...(agent.recall_tools ? Object.entries(agent.recall_tools) : []),
+          ...(agent.fact_check_tools ? Object.entries(agent.fact_check_tools) : []),
+          ...(agent.contrast_tools ? Object.entries(agent.contrast_tools) : []),
+          ...(agent.synthesis_tools ? Object.entries(agent.synthesis_tools) : []),
         ];
 
         allToolsConfig.forEach(([toolId, toolConfig]) => {
@@ -75,7 +104,7 @@ export function useDebateApp(configId?: string) {
               : undefined;
             
             // Get proper tool name from API
-            const toolInfo = toolsState.tools.find(t => t.id === toolId);
+            const toolInfo = availableToolInfos.find(t => t.id === toolId);
             const toolName = toolInfo?.name;
             console.log('🎯 About to create tool node:', { agentNodeId: agent.nodeId, toolId, toolName, position });
             canvasState.addToolNode(agent.nodeId, toolId, toolName, position);
@@ -88,7 +117,7 @@ export function useDebateApp(configId?: string) {
     } else {
       console.error('useDebateApp - No center node found');
     }
-  }, [debateConfig.loadedAgents.length]); // Only depend on the length, not the array itself
+  }, [debateConfig.loadedAgents.length, availableToolInfos]); // re-run when available tool metadata changes
 
   // Fetch available models on component mount
   useEffect(() => {
@@ -223,7 +252,7 @@ export function useDebateApp(configId?: string) {
     const agent = debateConfig.configuration.agents.find(a => a.nodeId === agentId);
     console.log('🔍 Agent lookup by nodeId result:', agent ? `FOUND: ${agent.name}` : 'NOT_FOUND');
     console.log('🔍 Available agents:', debateConfig.configuration.agents.map(a => ({ id: a.id, nodeId: a.nodeId, name: a.name })));
-    console.log('🔍 Tools available:', toolsState.tools.map(t => ({ id: t.id, name: t.name })));
+    console.log('🔍 Tools available:', availableToolInfos.map(t => ({ id: t.id, name: t.name })));
     console.log(' debateConfig:', debateConfig);
     
     if (!agent) {
@@ -231,7 +260,7 @@ export function useDebateApp(configId?: string) {
       return;
     }
 
-    const toolCategory = toolsState.getToolCategory(toolId);
+    const toolCategory = getToolCategory(toolId);
     
     if (toolCategory === null) {
       console.error('❌ Tool category not found for:', toolId);
@@ -278,17 +307,72 @@ export function useDebateApp(configId?: string) {
       debateConfig.updateAgent(agent.id, {
         web_search_tools: updatedTools
       });
+    } else if (toolCategory === 'fact_check') {
+      if (!agentHasSupportingTools(agent)) {
+        alert('Enable at least one web search or recall tool before adding fact-checking.');
+        return;
+      }
+      const currentTools = agent.fact_check_tools || {};
+      const toolKey = toolId as keyof typeof currentTools;
+
+      if (currentTools[toolKey]?.enabled) {
+        console.log('⚠️ Fact-check tool already enabled for this agent');
+        return;
+      }
+
+      const updatedTools = {
+        ...currentTools,
+        [toolKey]: { enabled: true }
+      };
+
+      debateConfig.updateAgent(agent.id, {
+        fact_check_tools: updatedTools
+      });
+    } else if (toolCategory === 'contrast') {
+      const currentTools = agent.contrast_tools || {};
+      const toolKey = toolId as keyof typeof currentTools;
+
+      if (currentTools[toolKey]?.enabled) {
+        console.log('⚠️ Contrast tool already enabled for this agent');
+        return;
+      }
+
+      const updatedTools = {
+        ...currentTools,
+        [toolKey]: { enabled: true }
+      };
+
+      debateConfig.updateAgent(agent.id, {
+        contrast_tools: updatedTools
+      });
+    } else if (toolCategory === 'synthesis') {
+      const currentTools = agent.synthesis_tools || {};
+      const toolKey = toolId as keyof typeof currentTools;
+
+      if (currentTools[toolKey]?.enabled) {
+        console.log('⚠️ Synthesis tool already enabled for this agent');
+        return;
+      }
+
+      const updatedTools = {
+        ...currentTools,
+        [toolKey]: { enabled: true }
+      };
+
+      debateConfig.updateAgent(agent.id, {
+        synthesis_tools: updatedTools
+      });
     }
 
     console.log('✅ Proceeding to create visual node');
 
     // Add tool node to canvas with proper name from API
-    const toolInfo = toolsState.tools.find(t => t.id === toolId);
+    const toolInfo = availableToolInfos.find(t => t.id === toolId);
     const toolName = toolInfo?.name;
     console.log('🎨 About to call addToolNode:', { agentId, toolId, toolName });
     canvasState.addToolNode(agentId, toolId, toolName);
     console.log('✅ addToolNode call completed');
-  }, [debateConfig, canvasState, toolsState.recallTools, toolsState.webSearchTools]);
+  }, [debateConfig, canvasState, availableToolInfos, getToolCategory]);
 
   // Tool removal handler - removes tool from both agent config and canvas
   const handleRemoveTool = useCallback((agentId: string, toolId: string) => {
@@ -296,26 +380,54 @@ export function useDebateApp(configId?: string) {
     if (!agent) return;
 
     // Get the tool category using the centralized lookup
-    const toolCategory = toolsState.getToolCategory(toolId);
+    const toolCategory = getToolCategory(toolId);
 
     if (toolCategory === null) {
       console.error('❌ Tool category not found for:', toolId);
       return;
     }
 
+    let updatedRecallTools = agent.recall_tools;
+    let updatedWebTools = agent.web_search_tools;
+
     if (toolCategory === 'recall') {
       // Remove recall tool from agent configuration
+      updatedRecallTools = {
+        ...agent.recall_tools,
+        [toolId]: { enabled: false }
+      };
+
       debateConfig.updateAgent(agentId, {
-        recall_tools: {
-          ...agent.recall_tools,
+        recall_tools: updatedRecallTools
+      });
+    } else if (toolCategory === 'web_search') {
+      // Remove web search tool from agent configuration
+      updatedWebTools = {
+        ...agent.web_search_tools,
+        [toolId]: { enabled: false }
+      };
+
+      debateConfig.updateAgent(agentId, {
+        web_search_tools: updatedWebTools
+      });
+    } else if (toolCategory === 'fact_check') {
+      debateConfig.updateAgent(agentId, {
+        fact_check_tools: {
+          ...agent.fact_check_tools,
           [toolId]: { enabled: false }
         }
       });
-    } else {
-      // Remove web search tool from agent configuration
+    } else if (toolCategory === 'contrast') {
       debateConfig.updateAgent(agentId, {
-        web_search_tools: {
-          ...agent.web_search_tools,
+        contrast_tools: {
+          ...agent.contrast_tools,
+          [toolId]: { enabled: false }
+        }
+      });
+    } else if (toolCategory === 'synthesis') {
+      debateConfig.updateAgent(agentId, {
+        synthesis_tools: {
+          ...agent.synthesis_tools,
           [toolId]: { enabled: false }
         }
       });
@@ -329,7 +441,13 @@ export function useDebateApp(configId?: string) {
     if (canvasState.selectedNodeId === toolNodeId) {
       canvasState.setSelectedNodeId(null);
     }
-  }, [debateConfig, canvasState, toolsState.recallTools, toolsState.webSearchTools]);
+
+    if (toolCategory === 'recall' || toolCategory === 'web_search') {
+      if (!agentHasSupportingTools(agent, { web: updatedWebTools, recall: updatedRecallTools })) {
+        disableFactCheckForAgent(agent);
+      }
+    }
+  }, [debateConfig, canvasState, getToolCategory, disableFactCheckForAgent]);
 
   // Compute highlighted node based on UI state
   const highlightedNodeId = useMemo(() => {
@@ -382,7 +500,7 @@ export function useDebateApp(configId?: string) {
     configLoadError: debateConfig.loadError,
     
     // Tools
-    availableTools: toolsState.tools,
+    availableTools: availableToolInfos,
     toolsLoading: toolsState.isLoading,
     toolsError: toolsState.error,
     handleToolToggle,

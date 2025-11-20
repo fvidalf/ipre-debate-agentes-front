@@ -173,6 +173,128 @@ export function configToCanvasNodes(config: Config): Node[] {
           }
         });
       }
+
+      // Fact-check tools
+      if (configAgent.fact_check_tools) {
+        const factCheckTools = configAgent.fact_check_tools;
+
+        Object.entries(factCheckTools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && typeof toolConfig === 'object' && 'enabled' in toolConfig && toolConfig.enabled) {
+            let toolX: number, toolY: number;
+
+            if ('canvas_position' in toolConfig && toolConfig.canvas_position) {
+              toolX = toolConfig.canvas_position.x;
+              toolY = toolConfig.canvas_position.y;
+            } else {
+              const agentNode = nodes.find(n => n.id === agentNodeId);
+              if (agentNode) {
+                const existingToolsForAgent = nodes.filter(n => n.type === 'tool' && n.parentAgentId === agentNodeId).length;
+                const angle = (existingToolsForAgent / 7) * 2 * Math.PI;
+                const radius = 15;
+                toolX = Math.max(5, Math.min(95, agentNode.x + Math.cos(angle) * radius));
+                toolY = Math.max(5, Math.min(95, agentNode.y + Math.sin(angle) * radius));
+              } else {
+                toolX = 20 + (agentIndex * 10);
+                toolY = 20 + (agentIndex * 10);
+              }
+            }
+
+            const toolNode: Node = {
+              id: `tool-${agentNodeId}-${toolId}`,
+              x: toolX,
+              y: toolY,
+              color: '#6B7280',
+              type: 'tool',
+              parentAgentId: agentNodeId,
+              toolId,
+              name: formatToolName(toolId)
+            };
+
+            nodes.push(toolNode);
+          }
+        });
+      }
+
+      // Contrast tools
+      if (configAgent.contrast_tools) {
+        const contrastTools = configAgent.contrast_tools;
+
+        Object.entries(contrastTools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && typeof toolConfig === 'object' && 'enabled' in toolConfig && toolConfig.enabled) {
+            let toolX: number, toolY: number;
+
+            if ('canvas_position' in toolConfig && toolConfig.canvas_position) {
+              toolX = toolConfig.canvas_position.x;
+              toolY = toolConfig.canvas_position.y;
+            } else {
+              const agentNode = nodes.find(n => n.id === agentNodeId);
+              if (agentNode) {
+                const existingToolsForAgent = nodes.filter(n => n.type === 'tool' && n.parentAgentId === agentNodeId).length;
+                const angle = (existingToolsForAgent / 8) * 2 * Math.PI;
+                const radius = 15;
+                toolX = Math.max(5, Math.min(95, agentNode.x + Math.cos(angle) * radius));
+                toolY = Math.max(5, Math.min(95, agentNode.y + Math.sin(angle) * radius));
+              } else {
+                toolX = 20 + (agentIndex * 10);
+                toolY = 20 + (agentIndex * 10);
+              }
+            }
+
+            const toolNode: Node = {
+              id: `tool-${agentNodeId}-${toolId}`,
+              x: toolX,
+              y: toolY,
+              color: '#6B7280',
+              type: 'tool',
+              parentAgentId: agentNodeId,
+              toolId,
+              name: formatToolName(toolId)
+            };
+
+            nodes.push(toolNode);
+          }
+        });
+      }
+
+      if (configAgent.synthesis_tools) {
+        const synthesisTools = configAgent.synthesis_tools;
+
+        Object.entries(synthesisTools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && typeof toolConfig === 'object' && 'enabled' in toolConfig && toolConfig.enabled) {
+            let toolX: number, toolY: number;
+
+            if ('canvas_position' in toolConfig && toolConfig.canvas_position) {
+              toolX = toolConfig.canvas_position.x;
+              toolY = toolConfig.canvas_position.y;
+            } else {
+              const agentNode = nodes.find(n => n.id === agentNodeId);
+              if (agentNode) {
+                const existingToolsForAgent = nodes.filter(n => n.type === 'tool' && n.parentAgentId === agentNodeId).length;
+                const angle = (existingToolsForAgent / 9) * 2 * Math.PI;
+                const radius = 15;
+                toolX = Math.max(5, Math.min(95, agentNode.x + Math.cos(angle) * radius));
+                toolY = Math.max(5, Math.min(95, agentNode.y + Math.sin(angle) * radius));
+              } else {
+                toolX = 20 + (agentIndex * 10);
+                toolY = 20 + (agentIndex * 10);
+              }
+            }
+
+            const toolNode: Node = {
+              id: `tool-${agentNodeId}-${toolId}`,
+              x: toolX,
+              y: toolY,
+              color: '#6B7280',
+              type: 'tool',
+              parentAgentId: agentNodeId,
+              toolId,
+              name: formatToolName(toolId)
+            };
+
+            nodes.push(toolNode);
+          }
+        });
+      }
     });
   }
 
@@ -256,6 +378,82 @@ export function agentsToApiFormat(agents: Agent[], nodes: Node[]): ApiAgent[] {
         
         if (Object.keys(agentData.recall_tools).length === 0) {
           agentData.recall_tools = undefined;
+        }
+      }
+
+      // Include fact-check tools with canvas positions if configured
+      if (agent.fact_check_tools) {
+        agentData.fact_check_tools = {};
+
+        Object.entries(agent.fact_check_tools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && toolConfig.enabled) {
+            const toolNode = nodes.find(n =>
+              n.type === 'tool' &&
+              n.parentAgentId === agent.nodeId &&
+              n.toolId === toolId
+            );
+
+            const toolConfigWithPosition = {
+              ...toolConfig,
+              canvas_position: toolNode ? { x: toolNode.x, y: toolNode.y } : undefined
+            };
+
+            agentData.fact_check_tools![toolId as keyof typeof agentData.fact_check_tools] = toolConfigWithPosition as any;
+          }
+        });
+
+        if (Object.keys(agentData.fact_check_tools).length === 0) {
+          agentData.fact_check_tools = undefined;
+        }
+      }
+
+      if (agent.contrast_tools) {
+        agentData.contrast_tools = {};
+
+        Object.entries(agent.contrast_tools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && toolConfig.enabled) {
+            const toolNode = nodes.find(n =>
+              n.type === 'tool' &&
+              n.parentAgentId === agent.nodeId &&
+              n.toolId === toolId
+            );
+
+            const toolConfigWithPosition = {
+              ...toolConfig,
+              canvas_position: toolNode ? { x: toolNode.x, y: toolNode.y } : undefined
+            };
+
+            agentData.contrast_tools![toolId as keyof typeof agentData.contrast_tools] = toolConfigWithPosition as any;
+          }
+        });
+
+        if (Object.keys(agentData.contrast_tools).length === 0) {
+          agentData.contrast_tools = undefined;
+        }
+      }
+
+      if (agent.synthesis_tools) {
+        agentData.synthesis_tools = {};
+
+        Object.entries(agent.synthesis_tools).forEach(([toolId, toolConfig]) => {
+          if (toolConfig && toolConfig.enabled) {
+            const toolNode = nodes.find(n =>
+              n.type === 'tool' &&
+              n.parentAgentId === agent.nodeId &&
+              n.toolId === toolId
+            );
+
+            const toolConfigWithPosition = {
+              ...toolConfig,
+              canvas_position: toolNode ? { x: toolNode.x, y: toolNode.y } : undefined
+            };
+
+            agentData.synthesis_tools![toolId as keyof typeof agentData.synthesis_tools] = toolConfigWithPosition as any;
+          }
+        });
+
+        if (Object.keys(agentData.synthesis_tools).length === 0) {
+          agentData.synthesis_tools = undefined;
         }
       }
 

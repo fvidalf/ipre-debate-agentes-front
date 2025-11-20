@@ -12,7 +12,7 @@ interface ToolsPanelProps {
 }
 
 export default function ToolsPanel({ onToolToggle }: ToolsPanelProps) {
-  const { webSearchTools, recallTools, isLoading, error } = useTools();
+  const { webSearchTools, recallTools, factCheckTools, contrastTools, synthesisTools, isLoading, error } = useTools();
 
   return (
     <BasePanel title="Tools">
@@ -74,8 +74,62 @@ export default function ToolsPanel({ onToolToggle }: ToolsPanelProps) {
               </div>
             )}
 
+            {/* Fact-Check Tools */}
+            {factCheckTools.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-neutral-700 mb-3">
+                  Fact-Check Tools
+                </h3>
+                <div className="space-y-3">
+                  {factCheckTools.map((tool) => (
+                    <ToolItem
+                      key={tool.id}
+                      tool={tool}
+                      onToggle={onToolToggle}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contrast Tools */}
+            {contrastTools.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-neutral-700 mb-3">
+                  Contrast Tools
+                </h3>
+                <div className="space-y-3">
+                  {contrastTools.map((tool) => (
+                    <ToolItem
+                      key={tool.id}
+                      tool={tool}
+                      onToggle={onToolToggle}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Synthesis Tools */}
+            {synthesisTools.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-neutral-700 mb-3">
+                  Synthesis Tools
+                </h3>
+                <div className="space-y-3">
+                  {synthesisTools.map((tool) => (
+                    <ToolItem
+                      key={tool.id}
+                      tool={tool}
+                      onToggle={onToolToggle}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Empty state */}
-            {webSearchTools.length === 0 && recallTools.length === 0 && (
+            {webSearchTools.length === 0 && recallTools.length === 0 && factCheckTools.length === 0 && contrastTools.length === 0 && synthesisTools.length === 0 && (
               <p className="text-sm text-neutral-500 text-center py-4">
                 No tools available
               </p>

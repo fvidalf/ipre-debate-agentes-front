@@ -270,6 +270,63 @@ Retrieves available tools for agent configuration.
           }
         }
       }
+    ],
+    "fact_check_tools": [
+      {
+        "id": "fact_check_tool",
+        "name": "Fact-Check",
+        "description": "Verify claims using web search and recall tools",
+        "icon": "CheckCircle",
+        "config_schema": {
+          "enabled": {"type": "boolean", "default": false, "description": "Enable fact-checking meta-tool"},
+          "canvas_position": {
+            "type": "object",
+            "properties": {
+              "x": {"type": "number", "description": "X coordinate on canvas"},
+              "y": {"type": "number", "description": "Y coordinate on canvas"}
+            },
+            "description": "Position of tool node on visual canvas"
+          }
+        }
+      }
+    ],
+    "contrast_tools": [
+      {
+        "id": "contrast_tool",
+        "name": "Contrast",
+        "description": "Generate opposing viewpoint and strengthen arguments",
+        "icon": "Scale",
+        "config_schema": {
+          "enabled": {"type": "boolean", "default": false, "description": "Enable contrast analysis"},
+          "canvas_position": {
+            "type": "object",
+            "properties": {
+              "x": {"type": "number", "description": "X coordinate on canvas"},
+              "y": {"type": "number", "description": "Y coordinate on canvas"}
+            },
+            "description": "Position of tool node on visual canvas"
+          }
+        }
+      }
+    ],
+    "synthesis_tools": [
+      {
+        "id": "synthesis_tool",
+        "name": "Synthesis",
+        "description": "Extract common ground and generate bridging insights between arguments",
+        "icon": "Lightbulb",
+        "config_schema": {
+          "enabled": {"type": "boolean", "default": false, "description": "Enable synthesis analysis"},
+          "canvas_position": {
+            "type": "object",
+            "properties": {
+              "x": {"type": "number", "description": "X coordinate on canvas"},
+              "y": {"type": "number", "description": "Y coordinate on canvas"}
+            },
+            "description": "Position of tool node on visual canvas"
+          }
+        }
+      }
     ]
   }
 }
@@ -413,17 +470,7 @@ Retrieves a specific config template by ID. Shows public templates or user's pri
       "name": "Conservative Economist",
       "profile": "You are a conservative economist...",
       "model_id": "openai/gpt-4o",
-  "web_search_tools": {
-      "recall_tools": {
-        "documents_tool": {
-          "enabled": true,
-          "canvas_position": null
-        },
-        "notes_tool": {
-          "enabled": true,
-          "canvas_position": null
-        }
-      },
+      "web_search_tools": {
         "news_tool": null,
         "pages_tool": {
           "enabled": true,
@@ -434,6 +481,34 @@ Retrieves a specific config template by ID. Shows public templates or user's pri
         "wikipedia_tool": {
           "enabled": true,
           "sources": [],
+          "canvas_position": null
+        }
+      },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": true,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": true,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "contrast_tools": {
+        "contrast_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "synthesis_tools": {
+        "synthesis_tool": {
+          "enabled": false,
           "canvas_position": null
         }
       },
@@ -456,6 +531,34 @@ Retrieves a specific config template by ID. Shows public templates or user's pri
         "wikipedia_tool": {
           "enabled": true,
           "sources": [],
+          "canvas_position": null
+        }
+      },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": false,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "contrast_tools": {
+        "contrast_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "synthesis_tools": {
+        "synthesis_tool": {
+          "enabled": false,
           "canvas_position": null
         }
       },
@@ -499,7 +602,6 @@ Retrieves configs for the authenticated user. These are editable instances that 
       "id": "550e8400-e29b-41d4-a716-446655440002",
       "name": "Modified Economic Debate",
       "description": "A modified version of the economic policy debate template",
-      "visibility": "public",
       "parameters": {
         "max_iters": 15,
         "bias": [0.2, -0.2, 0.4],
@@ -507,7 +609,6 @@ Retrieves configs for the authenticated user. These are editable instances that 
         "agent_count": 3
       },
       "version_number": 2,
-      "source_template_id": "550e8400-e29b-41d4-a716-446655440001",
       "created_at": "2025-09-03T10:30:00Z",
       "updated_at": "2025-09-03T11:15:00Z"
     }
@@ -531,7 +632,6 @@ Creates a new blank config with default values. This is used by the frontend edi
   "id": "550e8400-e29b-41d4-a716-446655440005",
   "name": "Untitled Config",
   "description": null,
-  "visibility": "private",
   "parameters": {
     "topic": "Should artificial intelligence development be regulated by government?",
     "max_iters": 21,
@@ -540,7 +640,6 @@ Creates a new blank config with default values. This is used by the frontend edi
   },
   "version_number": 1,
   "agents": [],
-  "source_template_id": null,
   "created_at": "2025-09-03T12:00:00Z",
   "updated_at": "2025-09-03T12:00:00Z"
 }
@@ -600,6 +699,33 @@ Updates a config with new values. Only provided fields are updated. Increments v
           "canvas_position": null
         }
       },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": true,
+          "canvas_position": {
+            "x": 300,
+            "y": 150
+          }
+        }
+      },
+      "contrast_tools": {
+        "contrast_tool": {
+          "enabled": true,
+          "canvas_position": {
+            "x": 350,
+            "y": 100
+          }
+        }
+      },
+      "synthesis_tools": {
+        "synthesis_tool": {
+          "enabled": true,
+          "canvas_position": {
+            "x": 400,
+            "y": 150
+          }
+        }
+      },
       "document_ids": ["550e8400-e29b-41d4-a716-446655440000"],
       "canvas_position": {
         "x": 50,
@@ -620,7 +746,6 @@ Updates a config with new values. Only provided fields are updated. Increments v
   "id": "550e8400-e29b-41d4-a716-446655440005",
   "name": "Updated Economic Debate",
   "description": "Modified description",
-  "visibility": "private",
   "parameters": {
     "topic": "Should minimum wage be $25/hour?",
     "max_iters": 15,
@@ -629,16 +754,15 @@ Updates a config with new values. Only provided fields are updated. Increments v
   },
   "version_number": 2,
   "agents": [...],
-  "source_template_id": null,
   "created_at": "2025-09-03T12:00:00Z",
   "updated_at": "2025-09-03T12:05:00Z"
 }
 ```
 
 **Important Notes:**
-- **Agent Data Storage**: Agents are stored separately from config parameters. Agent data (including canvas positions and web search tools) is stored in dedicated agent snapshot records, not in the `parameters` field.
+- **Agent Data Storage**: Agents are stored separately from config parameters. Agent data (including canvas positions, web search tools, recall tools, fact-check tools, and contrast tools) is stored in dedicated agent snapshot records, not in the `parameters` field.
 - **Canvas Positioning**: Each agent can have optional `canvas_position` with `x` and `y` coordinates for UI layout.
-- **Agent Config Consistency**: The `agents` array must use the same `AgentConfig` structure as in `POST /simulations`, including complete `web_search_tools` and `recall_tools` configuration when applicable.
+- **Agent Config Consistency**: The `agents` array must use the same `AgentConfig` structure as in `POST /simulations`, including complete `web_search_tools`, `recall_tools`, `fact_check_tools`, `contrast_tools`, and `synthesis_tools` configuration when applicable.
 
 **Versioning Behavior:**
 - If only `name` or `description` change → version stays same
@@ -651,7 +775,7 @@ Updates a config with new values. Only provided fields are updated. Increments v
 
 #### `GET /configs/{config_id}`
 
-Retrieves a specific public config by ID.
+Retrieves a specific config by ID. Only the owner can access their configs.
 
 **Path Parameters:**
 - `config_id` (string): UUID of the config
@@ -662,7 +786,6 @@ Retrieves a specific public config by ID.
   "id": "550e8400-e29b-41d4-a716-446655440002",
   "name": "Modified Economic Debate",
   "description": "A modified version of the economic policy debate template",
-  "visibility": "public",
   "parameters": {
     "max_iters": 15,
     "bias": [0.2, -0.2, 0.4],
@@ -670,7 +793,6 @@ Retrieves a specific public config by ID.
     "agent_count": 3
   },
   "version_number": 2,
-  "source_template_id": "550e8400-e29b-41d4-a716-446655440001",
   "agents": [
     {
       "position": 1,
@@ -688,6 +810,22 @@ Retrieves a specific public config by ID.
         "wikipedia_tool": {
           "enabled": true,
           "sources": [],
+          "canvas_position": null
+        }
+      },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": true,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": false,
           "canvas_position": null
         }
       },
@@ -713,6 +851,22 @@ Retrieves a specific public config by ID.
         "wikipedia_tool": {
           "enabled": true,
           "sources": [],
+          "canvas_position": null
+        }
+      },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": false,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": true,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": true,
           "canvas_position": null
         }
       },
@@ -823,6 +977,8 @@ Config snapshots provide access to historical versions of configs, preserving th
 - **Profile**: The agent's personality and behavioral instructions
 - **Model ID**: The language model assigned to the agent
 - **Web Search Tools**: Complete configuration of all search tools (news_tool, pages_tool, google_ai_tool, wikipedia_tool)
+- **Recall Tools**: Complete configuration of recall tools (documents_tool, notes_tool)
+- **Fact-Check Tools**: Complete configuration of fact-checking meta-tool (fact_check_tool)
 - **Canvas Position**: Position coordinates for both the agent and individual tools on the visual canvas
 
 #### `GET /config-versions/{config_id}/versions/{version_number}`
@@ -866,6 +1022,22 @@ Retrieves a specific config version by config ID and version number. Returns the
           "canvas_position": null
         }
       },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": true,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": false,
+          "canvas_position": null
+        }
+      },
       "canvas_position": {
         "x": 100.5,
         "y": 200.0
@@ -891,6 +1063,22 @@ Retrieves a specific config version by config ID and version number. Returns the
           "canvas_position": null
         }
       },
+      "recall_tools": {
+        "documents_tool": {
+          "enabled": false,
+          "canvas_position": null
+        },
+        "notes_tool": {
+          "enabled": true,
+          "canvas_position": null
+        }
+      },
+      "fact_check_tools": {
+        "fact_check_tool": {
+          "enabled": true,
+          "canvas_position": null
+        }
+      },
       "canvas_position": {
         "x": 300.0,
         "y": 150.75
@@ -898,7 +1086,6 @@ Retrieves a specific config version by config ID and version number. Returns the
       "created_at": "2025-09-24T00:00:00Z"
     }
   ],
-  "source_template_id": "550e8400-e29b-41d4-a716-446655440001",
   "created_at": "2025-09-24T00:00:00Z",
   "updated_at": "2025-09-24T00:00:00Z"
 }
@@ -1017,6 +1204,8 @@ curl -X POST http://localhost:8000/documents \
   -F "document_type=research_paper" \
   -F "tags=economics,policy"
 ```
+
+#### `GET /documents/{document_id}`
 
 Retrieves a specific document from the user's library, including full content.
 
@@ -1165,6 +1354,12 @@ agent {
     documents_tool?: { enabled, canvas_position }
     notes_tool?: { enabled, canvas_position }
   }
+  fact_check_tools?: {
+    fact_check_tool?: { enabled, canvas_position }
+  }
+  contrast_tools?: {
+    contrast_tool?: { enabled, canvas_position }
+  }
   document_ids?: [string]  // Document IDs this agent can access
   canvas_position?: { x, y }  // Agent's position on canvas
 }
@@ -1214,6 +1409,24 @@ agent {
       - `canvas_position` (object, optional): Position of tool node on visual canvas
         - `x` (float): X coordinate
         - `y` (float): Y coordinate
+  - `fact_check_tools` (object, optional): Fact-checking meta-tool configuration
+    - `fact_check_tool` (object, optional): Fact-check tool configuration
+      - `enabled` (boolean, default: false): Enable fact-checking meta-tool
+      - `canvas_position` (object, optional): Position of tool node on visual canvas
+        - `x` (float): X coordinate
+        - `y` (float): Y coordinate
+  - `contrast_tools` (object, optional): Contrast tool configuration
+    - `contrast_tool` (object, optional): Contrast tool configuration
+      - `enabled` (boolean, default: false): Enable contrast analysis
+      - `canvas_position` (object, optional): Position of tool node on visual canvas
+        - `x` (float): X coordinate
+        - `y` (float): Y coordinate
+  - `synthesis_tools` (object, optional): Synthesis tool configuration
+    - `synthesis_tool` (object, optional): Synthesis tool configuration
+      - `enabled` (boolean, default: false): Enable synthesis analysis
+      - `canvas_position` (object, optional): Position of tool node on visual canvas
+        - `x` (float): X coordinate
+        - `y` (float): Y coordinate
   - `document_ids` (array of strings, optional): List of document IDs from user's library that this agent can access via documents_tool
   - `canvas_position` (object, optional): Position on the visual canvas
     - `x` (float): X coordinate
@@ -1235,6 +1448,42 @@ The recall tools provide agents with RAG (Retrieval-Augmented Generation) capabi
 - **Frontend Handling**: The frontend should treat `documents_tool` and `notes_tool` as two separate tools, just like the web search tools. Each can be enabled/disabled and positioned independently.
 - **Tool Integration**: Agents can use recall tools to retrieve citeable, reliable information from their own debate history or uploaded documents, with no summarization step.
 - **Canvas Positioning**: Each recall tool can have an optional `canvas_position` field for UI layout.
+
+**Fact-Check Tools (Meta-Tools):**
+The fact-check tool is a meta-tool that uses web search and/or recall tools to verify claims made during debates:
+- **fact_check_tool**: Analyzes claims and generates verification queries, then uses available tools (web search, recall) to gather supporting/contradicting evidence
+- **Architecture**: Composition-based design - receives references to web search and recall tools as callable functions, treating them as black boxes
+- **Three-Phase Tool Creation**: Base tools (web search, recall) are created first, then fact-check tools are instantiated with references to those base tools, finally all tools are assembled into agents
+- **Server-Side Configuration**: Precision, confidence thresholds, and evidence limits are configured server-side with sensible defaults (similar to recall tool chunking and similarity thresholds)
+- **User Configuration**: Users only control enabled/disabled state and canvas positioning - no need to micro-manage verification parameters
+- **Tool Requirements**: Requires at least one of web search or recall tools to be enabled for the same agent
+- **Frontend Handling**: Should be treated as a separate tool with its own enable/disable toggle and canvas positioning
+- **Canvas Positioning**: Can have an optional `canvas_position` field for UI layout
+
+**Contrast Tools (Standalone Base Tools):**
+The contrast tool generates opposing viewpoints and strengthens arguments through structured analysis:
+- **contrast_tool**: Autonomous tool that performs a 4-phase analysis: (1) inverts agent persona, (2) generates structured opposing argument, (3) extracts specific critiques, (4) produces strengthened version of original argument
+- **Architecture**: Standalone tool using pure reasoning/generation - no dependency on web search or recall tools
+- **Tool Placement**: Created in Phase 1 alongside web search and recall (base tools), not Phase 2 (meta-tools)
+- **Output Format**: Structured text with sections for opposing viewpoint, key critiques, strengthened argument, and improvements made
+- **Server-Side Configuration**: Strengthening is always enabled (it's the core value proposition) - users don't configure internal parameters
+- **User Configuration**: Users only control enabled/disabled state and canvas positioning
+- **Use Cases**: Self-critique, argument improvement, identifying weaknesses before opponents do, steelmanning positions
+- **Frontend Handling**: Should be treated as a standalone tool with its own enable/disable toggle and canvas positioning
+- **Canvas Positioning**: Can have an optional `canvas_position` field for UI layout
+
+**Synthesis Tools (Standalone Base Tools):**
+The synthesis tool extracts common ground and generates bridging insights between arguments:
+- **synthesis_tool**: Autonomous tool that performs a 5-phase analysis: (1) decomposes both arguments into components, (2) extracts common ground between positions, (3) identifies true divergence points, (4) generates novel synthesis angle, (5) creates bridging statement
+- **Architecture**: Standalone tool using pure reasoning/analysis - no dependency on web search or recall tools
+- **Tool Placement**: Created in Phase 1 alongside web search and recall (base tools), not Phase 2 (meta-tools)
+- **Input Format**: Requires two arguments (argument_a, argument_b) with optional focus parameter
+- **Output Format**: Structured text with common ground points, divergence points, new synthesis angle, and bridging statement
+- **Server-Side Configuration**: All analysis phases are enabled - users don't configure internal parameters
+- **User Configuration**: Users only control enabled/disabled state and canvas positioning
+- **Use Cases**: Finding compromise, bridging positions, identifying shared values, generating new perspectives
+- **Frontend Handling**: Should be treated as a standalone tool with its own enable/disable toggle and canvas positioning
+- **Canvas Positioning**: Can have an optional `canvas_position` field for UI layout
 
 **Document Assignment Workflow:**
 To give agents access to specific documents from the user's library:
@@ -2006,4 +2255,3 @@ FastAPI automatically validates request bodies and returns detailed validation e
   "detail": "Failed to fetch agent templates: Database connection failed"
 }
 ```
-

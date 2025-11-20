@@ -74,6 +74,27 @@ export type RecallToolsConfig = {
   } | null;
 };
 
+export type FactCheckToolsConfig = {
+  fact_check_tool?: {
+    enabled: boolean;
+    canvas_position?: { x: number; y: number } | null;
+  } | null;
+};
+
+export type ContrastToolsConfig = {
+  contrast_tool?: {
+    enabled: boolean;
+    canvas_position?: { x: number; y: number } | null;
+  } | null;
+};
+
+export type SynthesisToolsConfig = {
+  synthesis_tool?: {
+    enabled: boolean;
+    canvas_position?: { x: number; y: number } | null;
+  } | null;
+};
+
 export type Agent = {
   id: string;
   name: string;
@@ -86,6 +107,9 @@ export type Agent = {
   lm_config?: LMConfig; // LM parameters for this agent
   web_search_tools?: WebSearchToolsConfig; // Web search tools configuration
   recall_tools?: RecallToolsConfig; // Recall tools configuration
+  fact_check_tools?: FactCheckToolsConfig; // Fact-check tools configuration
+  contrast_tools?: ContrastToolsConfig; // Contrast tools configuration
+  synthesis_tools?: SynthesisToolsConfig; // Synthesis tools configuration
   document_ids?: string[]; // IDs of documents assigned to this agent
 };
 
